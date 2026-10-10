@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Spiced pumpkin loaf with a brown-sugar streusel top and a maple glaze poured on while it's hot.">
+<title>Pumpkin Bread with Maple Glaze</title>
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: same template as the other recipe pages; recolored pumpkin spice */
+:root {
+  --bg: #f6f4ee;
+  --surface: #ffffff;
+  --fg: #22201c;
+  --muted: #645f57;
+  --line: #e2ded4;
+  --done: #a39d94;
+  --accent: #a8461a;
+  --accent-soft: #f9e1d3;
+  --on-accent: #ffffff;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #151412; --surface: #1f1d1a; --fg: #ece9e3; --muted: #a9a49b; --line: #34312c; --done: #6c675f; --accent: #ff9f72; --accent-soft: #3a2116; --on-accent: #200b03;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #151412; --surface: #1f1d1a; --fg: #ece9e3; --muted: #a9a49b; --line: #34312c; --done: #6c675f; --accent: #ff9f72; --accent-soft: #3a2116; --on-accent: #200b03;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--body); font-size: 1.125rem; line-height: 1.5;
+  padding-inline: 16px; padding-block: 0 48px;
+}
+.wrap { max-width: 34rem; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; }
+
+.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bg); padding-block: 12px 10px; margin-inline: -16px; padding-inline: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.top-row { max-width: 34rem; margin: 0 auto; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+h1 { font-family: var(--display); font-weight: 800; font-size: 1.6rem; line-height: 1.1; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+.meta { color: var(--muted); font-size: 0.95rem; white-space: nowrap; }
+.bar { max-width: 34rem; margin: 10px auto 0; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s; }
+
+.tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font: inherit; font-size: 0.95rem; color: var(--fg); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.chip:disabled { opacity: .5; cursor: default; }
+
+section { display: flex; flex-direction: column; gap: 0.6rem; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0; text-wrap: balance; }
+h2 .n { color: var(--accent); margin-right: .35em; }
+.opt { color: var(--muted); font-weight: 400; font-size: 1rem; }
+p { margin: 0; }
+.note { color: var(--muted); }
+.sub { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; margin-top: .25rem; }
+
+ul.checks { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+ul.checks li + li { border-top: 1px solid var(--line); }
+ul.checks label { display: flex; align-items: center; gap: 14px; padding: 14px 16px; cursor: pointer; min-height: 56px; }
+ul.checks input { appearance: none; flex: none; width: 28px; height: 28px; border: 2px solid var(--muted); border-radius: 8px; display: grid; place-content: center; margin: 0; cursor: pointer; }
+ul.checks input:checked { background: var(--accent); border-color: var(--accent); }
+ul.checks input:checked::after { content: ""; width: 8px; height: 14px; border: solid var(--on-accent); border-width: 0 3px 3px 0; transform: translateY(-2px) rotate(45deg); }
+ul.checks input:focus-visible, .chip:focus-visible, .step-btn:focus-visible, .big:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+ul.checks input:checked + span { color: var(--done); text-decoration: line-through; }
+.amt { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.step-btn {
+  font: inherit; display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 14px;
+  padding: 14px 16px; cursor: pointer; min-height: 56px;
+}
+.step-btn .box { flex: none; width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--muted); display: grid; place-content: center; }
+.step-btn[aria-pressed="true"] .box { background: var(--accent); border-color: var(--accent); }
+.step-btn[aria-pressed="true"] .box::after { content: ""; width: 7px; height: 13px; border: solid var(--on-accent); border-width: 0 3px 3px 0; transform: translateY(-2px) rotate(45deg); }
+.step-btn[aria-pressed="true"] .lbl { color: var(--done); }
+
+.milestone { background: var(--accent-soft); border-radius: 14px; padding: 12px 16px; font-weight: 700; }
+
+.timer { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.clock { font-family: var(--display); font-weight: 800; font-size: 3rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.clock.ring { color: var(--accent); animation: pulse 1s infinite; }
+.ends { color: var(--muted); font-size: .95rem; }
+@keyframes pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .clock.ring { animation: none; } .bar > i { transition: none; } }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.big { font: inherit; font-weight: 700; border: 0; border-radius: 12px; padding: 12px 20px; cursor: pointer; background: var(--accent); color: var(--on-accent); min-height: 48px; }
+.big.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); }
+
+footer { border-top: 1px solid var(--line); padding-top: 1rem; }
+.back { display: inline-flex; align-items: center; min-height: 32px; margin-bottom: 4px; color: var(--muted); font-size: .95rem; text-decoration: none; }
+.back:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-row"><a class="back" href="../index.html">&larr; All recipes</a></div>
+  <div class="top-row">
+    <h1>Pumpkin Bread with Maple Glaze</h1>
+    <span class="meta" id="meta">~2¼ hr · 1 loaf</span>
+  </div>
+  <div class="bar" aria-hidden="true"><i id="bar"></i></div>
+</header>
+
+<main class="wrap">
+  <div class="tools" style="margin-top:1rem">
+    <button class="chip" id="wake" aria-pressed="false" type="button">Keep screen on</button>
+    <button class="chip" id="reset" type="button">Start over</button>
+  </div>
+
+  <section>
+    <h2><span class="n">0</span>Get everything out first</h2>
+    <p class="note">Use pure pumpkin purée, not pumpkin pie filling. Libby's is a safe pick; some other brands are wetter.</p>
+    <p class="sub">Streusel</p>
+    <ul class="checks">
+      <li><label><input type="checkbox" id="p1"><span><span class="amt">¼ cup</span> (55g) unsalted butter, melted</span></label></li>
+      <li><label><input type="checkbox" id="p2"><span><span class="amt">½ cup</span> (65g) all-purpose flour</span></label></li>
+      <li><label><input type="checkbox" id="p3"><span><span class="amt">¼ cup</span> (50g) packed light brown sugar</span></label></li>
+      <li><label><input type="checkbox" id="p4"><span><span class="amt">2 tbsp</span> granulated sugar</span></label></li>
+      <li><label><input type="checkbox" id="p5"><span><span class="amt">½ tsp</span> pumpkin pie spice</span></label></li>
+    </ul>
+    <p class="sub">Bread</p>
+    <ul class="checks">
+      <li><label><input type="checkbox" id="b1"><span><span class="amt">1</span> can pure pumpkin purée (15 oz)</span></label></li>
+      <li><label><input type="checkbox" id="b2"><span><span class="amt">1 cup</span> (200g) granulated sugar</span></label></li>
+      <li><label><input type="checkbox" id="b3"><span><span class="amt">½ cup</span> (100g) packed light brown sugar</span></label></li>
+      <li><label><input type="checkbox" id="b4"><span><span class="amt">½ cup</span> (100ml) vegetable oil</span></label></li>
+      <li><label><input type="checkbox" id="b5"><span><span class="amt">2</span> large eggs</span></label></li>
+      <li><label><input type="checkbox" id="b6"><span><span class="amt">½ tsp</span> vanilla</span></label></li>
+      <li><label><input type="checkbox" id="b7"><span><span class="amt">½ cup</span> (110ml) milk</span></label></li>
+      <li><label><input type="checkbox" id="b8"><span><span class="amt">1¾ cups</span> (230g) all-purpose flour</span></label></li>
+      <li><label><input type="checkbox" id="b9"><span><span class="amt">1 tsp</span> baking soda</span></label></li>
+      <li><label><input type="checkbox" id="b10"><span><span class="amt">1 tsp</span> cinnamon</span></label></li>
+      <li><label><input type="checkbox" id="b11"><span><span class="amt">¾ tsp</span> pumpkin pie spice</span></label></li>
+      <li><label><input type="checkbox" id="b12"><span><span class="amt">½ tsp</span> kosher salt</span></label></li>
+    </ul>
+    <p class="sub">Glaze</p>
+    <ul class="checks">
+      <li><label><input type="checkbox" id="g1"><span><span class="amt">½ cup</span> (60g) powdered sugar</span></label></li>
+      <li><label><input type="checkbox" id="g2"><span><span class="amt">¼ cup</span> (85g) pure maple syrup</span></label></li>
+    </ul>
+    <p class="sub">Tools</p>
+    <ul class="checks">
+      <li><label><input type="checkbox" id="t1"><span>9×5 loaf pan (a true 9×5, not a 1-pound pan)</span></label></li>
+      <li><label><input type="checkbox" id="t2"><span>Parchment paper</span></label></li>
+      <li><label><input type="checkbox" id="t3"><span>Mixer or whisk</span></label></li>
+      <li><label><input type="checkbox" id="t4"><span>Small bowl and two large bowls</span></label></li>
+      <li><label><input type="checkbox" id="t5"><span>Fork and a toothpick</span></label></li>
+    </ul>
+    <div class="milestone" id="ms-prep" hidden>All out. Streusel first so it can chill.</div>
+  </section>
+
+  <section>
+    <h2><span class="n">1</span>Make the streusel</h2>
+    <p>Stir all the streusel ingredients together in the small bowl and put it in the fridge.</p>
+    <button class="step-btn" id="s1" aria-pressed="false" type="button"><span class="box"></span><span class="lbl">Streusel is chilling</span></button>
+  </section>
+
+  <section>
+    <h2><span class="n">2</span>Oven and pan</h2>
+    <ul class="checks">
+      <li><label><input type="checkbox" id="o1"><span>Heat the oven to 325°F (350°F if your oven runs cool)</span></label></li>
+      <li><label><input type="checkbox" id="o2"><span>Grease the pan and line it with parchment, leaving it hanging over the two long sides so you can lift the loaf out</span></label></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="n">3</span>Mix the dry ingredients</h2>
+    <p>Whisk the flour, baking soda, cinnamon, pumpkin pie spice and salt in a bowl. Set it aside.</p>
+    <button class="step-btn" id="s3" aria-pressed="false" type="button"><span class="box"></span><span class="lbl">Dry mix is ready</span></button>
+  </section>
+
+  <section>
+    <h2><span class="n">4</span>Mix the wet ingredients</h2>
+    <ul class="checks">
+      <li><label><input type="checkbox" id="w1"><span>Mix both sugars, the pumpkin and the oil until smooth</span></label></li>
+      <li><label><input type="checkbox" id="w2"><span>Mix in the eggs and vanilla</span></label></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="n">5</span>Bring it together</h2>
+    <p class="note">Mix in, in this order:</p>
+    <ul class="checks">
+      <li><label><input type="checkbox" id="m1"><span>Half the dry ingredients</span></label></li>
+      <li><label><input type="checkbox" id="m2"><span>The milk</span></label></li>
+      <li><label><input type="checkbox" id="m3"><span>The rest of the dry ingredients. Stop once the batter is smooth</span></label></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="n">6</span>Fill the pan and add the streusel</h2>
+    <p>Pour the batter into the pan and spread it out evenly. Break the chilled streusel into even crumbs with a fork and cover the whole top with it.</p>
+    <button class="step-btn" id="s6" aria-pressed="false" type="button"><span class="box"></span><span class="lbl">Ready for the oven</span></button>
+  </section>
+
+  <section>
+    <h2><span class="n">7</span>Bake 1 hour 20 minutes</h2>
+    <p>It's done when a toothpick in the center comes out clean. If not, give it 5 more minutes at a time. A very full pan can stay wet in the middle, so trust the toothpick, not the clock.</p>
+    <div class="timer" data-id="bake" data-default="80">
+      <div class="clock" aria-live="polite">1:20:00</div>
+      <div class="ends" hidden></div>
+      <div class="row presets">
+        <button class="chip" data-min="80" aria-pressed="true" type="button">1 hr 20 min</button>
+        <button class="chip" data-min="5" aria-pressed="false" type="button">+5 min more</button>
+      </div>
+      <div class="row">
+        <button class="big go" type="button">Start timer</button>
+        <button class="big ghost stop" type="button" hidden>Cancel</button>
+      </div>
+      <p class="note" style="font-size:.95rem">This timer keeps counting if you close the page, but it can only beep while the page is open. For a long wait, also set an alarm in your phone's Clock app.</p>
+    </div>
+    <button class="step-btn" id="s7" aria-pressed="false" type="button"><span class="box"></span><span class="lbl">Toothpick comes out clean</span></button>
+  </section>
+
+  <section>
+    <h2><span class="n">8</span>Make the glaze while it bakes</h2>
+    <p>Whisk the powdered sugar and maple syrup together until smooth.</p>
+    <button class="step-btn" id="s8" aria-pressed="false" type="button"><span class="box"></span><span class="lbl">Glaze is ready</span></button>
+  </section>
+
+  <section>
+    <h2><span class="n">9</span>Glaze it hot</h2>
+    <p>As soon as the bread comes out of the oven, pour the glaze over the hot loaf.</p>
+    <button class="step-btn" id="s9" aria-pressed="false" type="button"><span class="box"></span><span class="lbl">Glazed</span></button>
+  </section>
+
+  <section>
+    <h2><span class="n">10</span>Cool 20 minutes, then slice</h2>
+    <p>Let it cool about 20 minutes. Lift it out by the parchment and slice.</p>
+    <div class="timer" data-id="cool" data-default="20">
+      <div class="clock" aria-live="polite">20:00</div>
+      <div class="ends" hidden></div>
+      <div class="row">
+        <button class="big go" type="button">Start 20-minute timer</button>
+        <button class="big ghost stop" type="button" hidden>Cancel</button>
+      </div>
+    </div>
+    <button class="step-btn" id="s10" aria-pressed="false" type="button"><span class="box"></span><span class="lbl">Sliced</span></button>
+    <div class="milestone" id="ms-done" hidden>Bread's ready. 🎉</div>
+  </section>
+
+  <footer>
+    <p class="note">Makes 1 loaf. Serve warm. Keep leftovers in an airtight container in the fridge.</p>
+    <p class="note">Adapted from Butternut Bakery.</p>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var KEY = "pumpkin-bread-with-maple-glaze-v1";
+  var state = {};
+  try { state = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { state = {}; }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  var boxes = [].slice.call(document.querySelectorAll("ul.checks input"));
+  var steps = [].slice.call(document.querySelectorAll(".step-btn"));
+  var prepIds = ["p1","p2","p3","p4","p5","b1","b2","b3","b4","b5","b6","b7","b8","b9","b10","b11","b12","g1","g2","t1","t2","t3","t4","t5"];
+
+  boxes.forEach(function (b) {
+    b.checked = !!state[b.id];
+    b.addEventListener("change", function () { state[b.id] = b.checked; save(); update(); });
+  });
+  steps.forEach(function (s) {
+    s.setAttribute("aria-pressed", state[s.id] ? "true" : "false");
+    s.addEventListener("click", function () {
+      state[s.id] = !state[s.id];
+      s.setAttribute("aria-pressed", state[s.id] ? "true" : "false");
+      save(); update();
+    });
+  });
+
+  function update() {
+    var counted = boxes.filter(function (b) { return !b.hasAttribute("data-optional"); });
+    var total = counted.length + steps.length, done = 0;
+    counted.forEach(function (b) { if (b.checked) done++; });
+    steps.forEach(function (s) { if (state[s.id]) done++; });
+    document.getElementById("bar").style.width = (done / total * 100) + "%";
+    document.getElementById("meta").textContent = done === 0 ? "~2¼ hr · 1 loaf" : done + " of " + total + " done";
+    document.getElementById("ms-prep").hidden = !prepIds.every(function (id) { return state[id]; });
+    document.getElementById("ms-done").hidden = !state.s10;
+  }
+  update();
+
+  // Keep screen on
+  var lock = null, wakeBtn = document.getElementById("wake");
+  function setWake(on) {
+    if (!on) { if (lock) { lock.release().catch(function(){}); lock = null; } wakeBtn.setAttribute("aria-pressed", "false"); wakeBtn.textContent = "Keep screen on"; return; }
+    if (!("wakeLock" in navigator)) { wakeBtn.textContent = "Screen lock not supported here"; return; }
+    navigator.wakeLock.request("screen").then(function (l) {
+      lock = l; wakeBtn.setAttribute("aria-pressed", "true"); wakeBtn.textContent = "Screen stays on ✓";
+      l.addEventListener("release", function () { if (lock === l) { lock = null; wakeBtn.setAttribute("aria-pressed", "false"); wakeBtn.textContent = "Keep screen on"; } });
+    }).catch(function () { wakeBtn.textContent = "Couldn't keep screen on"; });
+  }
+  wakeBtn.addEventListener("click", function () { setWake(!lock); });
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible" && wakeBtn.getAttribute("aria-pressed") === "true" && !lock) setWake(true);
+  });
+
+  // Timers (end time is saved, so a long timer survives closing the page)
+  var ctx = null;
+  function audio() { try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); ctx.resume(); } catch (e) {} }
+  function beep() {
+    if (ctx) {
+      try {
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.frequency.value = 880; o.connect(g); g.connect(ctx.destination);
+        g.gain.setValueAtTime(0.25, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+        o.start(); o.stop(ctx.currentTime + 0.5);
+      } catch (e) {}
+    }
+    try { navigator.vibrate && navigator.vibrate(300); } catch (e) {}
+  }
+  function fmt(s) {
+    var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), r = s % 60;
+    var mm = (m < 10 ? "0" : "") + m, rr = (r < 10 ? "0" : "") + r;
+    return h ? h + ":" + mm + ":" + rr : mm + ":" + rr;
+  }
+  function clockTime(t) { return new Date(t).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); }
+
+  var timers = [];
+  document.querySelectorAll(".timer").forEach(function (el) {
+    var id = el.dataset.id, skey = "timer-" + id;
+    var mins = +el.dataset.default, tick = null, ringTick = null;
+    var clock = el.querySelector(".clock"), ends = el.querySelector(".ends");
+    var go = el.querySelector(".go"), stop = el.querySelector(".stop");
+    var presets = [].slice.call(el.querySelectorAll(".presets .chip"));
+    var goLabel = go.textContent;
+
+    presets.forEach(function (c) {
+      c.addEventListener("click", function () {
+        if (state[skey]) return;
+        mins = +c.dataset.min;
+        presets.forEach(function (o) { o.setAttribute("aria-pressed", o === c ? "true" : "false"); });
+        clock.textContent = fmt(mins * 60);
+      });
+    });
+
+    function reset() {
+      clearInterval(tick); clearInterval(ringTick); tick = ringTick = null;
+      delete state[skey]; save();
+      clock.classList.remove("ring"); clock.textContent = fmt(mins * 60);
+      ends.hidden = true; go.hidden = false; go.textContent = goLabel;
+      stop.hidden = true; stop.textContent = "Cancel";
+      presets.forEach(function (c) { c.disabled = false; });
+    }
+    function run(endAt) {
+      go.hidden = true; stop.hidden = false;
+      presets.forEach(function (c) { c.disabled = true; });
+      ends.textContent = "Done at " + clockTime(endAt); ends.hidden = false;
+      function step() {
+        var left = Math.max(0, Math.round((endAt - Date.now()) / 1000));
+        clock.textContent = fmt(left);
+        if (left === 0) {
+          clearInterval(tick); tick = null;
+          clock.textContent = "Time's up!"; clock.classList.add("ring");
+          stop.textContent = "Done"; beep(); ringTick = setInterval(beep, 1500);
+        }
+      }
+      step(); tick = setInterval(step, 250);
+    }
+    go.addEventListener("click", function () {
+      audio();
+      state[skey] = Date.now() + mins * 60000; save();
+      run(state[skey]);
+    });
+    stop.addEventListener("click", reset);
+
+    clock.textContent = fmt(mins * 60);
+    if (state[skey]) run(state[skey]);
+    timers.push(reset);
+  });
+
+  document.getElementById("reset").addEventListener("click", function () {
+    timers.forEach(function (r) { r(); });
+    state = {}; save();
+    boxes.forEach(function (b) { b.checked = false; });
+    steps.forEach(function (s) { s.setAttribute("aria-pressed", "false"); });
+    update(); window.scrollTo({ top: 0 });
+  });
+})();
+</script>
+</body>
+</html>

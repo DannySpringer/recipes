@@ -22,7 +22,7 @@ Leave out anything personal: who sent it or where it came from, names, places, d
 
 ## 3. Add the index card
 
-Add an `<li>` to `ul#list` in `index.html` using the card markup in CLAUDE.md, keeping the list sorted A to Z by name. `--c`/`--c-dark` are the page's accent colors; the facts match the page's `#meta` time and yield.
+Pick the recipe's category (Dinners, Sides & breads, or Sweets; see CLAUDE.md) and add an `<li>` to that group's `ul.list` in `index.html` using the card markup in CLAUDE.md, keeping the group sorted A to Z by name. `--c`/`--c-dark` are the page's accent colors; the facts match the page's `#meta` time and yield.
 
 ## 4. Check it
 

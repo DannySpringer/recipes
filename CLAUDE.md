@@ -42,7 +42,13 @@ Writing style: short, friendly, second person, one action per step. Say what "do
 
 ## Index cards
 
-Each recipe is one `<li>` in `ul#list` in `index.html`, sorted A to Z by name:
+The index groups recipes into categories, each a `<section class="group" id="...">` with an `<h2>` and a `ul.list`, plus a matching link in the `nav.jump` row at the top:
+
+- `#dinners` **Dinners**: main dishes.
+- `#sides` **Sides & breads**: breads, dips, sauces, side dishes.
+- `#sweets` **Sweets**: cakes, quick breads, desserts.
+
+Pick the closest group; add a new one (section plus jump link) only when a recipe truly fits none. Each recipe is one `<li>` in its group's list, sorted A to Z by name within the group:
 
 ```html
 <li><a class="card" href="recipes/<slug>.html" style="--c:<light accent>; --c-dark:<dark accent>">
