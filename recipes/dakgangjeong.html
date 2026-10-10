@@ -88,6 +88,8 @@ ul.checks input:checked + span { color: var(--done); text-decoration: line-throu
 .step-btn[aria-pressed="true"] .box::after { content: ""; width: 7px; height: 13px; border: solid var(--on-accent); border-width: 0 3px 3px 0; transform: translateY(-2px) rotate(45deg); }
 .step-btn[aria-pressed="true"] .lbl { color: var(--done); }
 
+.hero { display: block; width: 100%; height: auto; aspect-ratio: 765 / 574; object-fit: cover; border-radius: 14px; margin-top: 1rem; background: var(--line); }
+
 .milestone { background: var(--accent-soft); border-radius: 14px; padding: 12px 16px; font-weight: 700; }
 
 .timer { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
@@ -116,7 +118,9 @@ footer { border-top: 1px solid var(--line); padding-top: 1rem; }
 </header>
 
 <main class="wrap">
-  <div class="tools" style="margin-top:1rem">
+  <img class="hero" src="img/dakgangjeong.webp" width="765" height="574" alt="A plate of glossy red-glazed fried chicken wings with sesame seeds and scallions, with rice and slaw alongside">
+
+  <div class="tools">
     <button class="chip" id="wake" aria-pressed="false" type="button">Keep screen on</button>
     <button class="chip" id="reset" type="button">Start over</button>
   </div>
