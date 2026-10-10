@@ -64,6 +64,8 @@ ul.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction
 :root[data-theme="dark"] .card::before { background: var(--c-dark, var(--c)); }
 .card:active { transform: scale(.99); }
 .card:focus-visible { outline: 3px solid var(--c); outline-offset: 2px; }
+.card.has-thumb { padding-right: 104px; min-height: 120px; }
+.thumb { position: absolute; top: 16px; right: 16px; width: 72px; height: 72px; border-radius: 12px; object-fit: cover; background: var(--line); }
 .name { font-family: var(--display); font-weight: 600; font-size: 1.35rem; line-height: 1.15; text-wrap: balance; }
 .blurb { color: var(--muted); font-size: 1rem; }
 .facts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
@@ -152,7 +154,8 @@ ul.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction
   <section class="group" id="sweets">
     <h2>Sweets</h2>
     <ul class="list">
-      <li><a class="card" href="recipes/pumpkin-bread-with-maple-glaze.html" style="--c:#a8461a; --c-dark:#ff9f72">
+      <li><a class="card has-thumb" href="recipes/pumpkin-bread-with-maple-glaze.html" style="--c:#a8461a; --c-dark:#ff9f72">
+        <img class="thumb" src="recipes/img/pumpkin-bread-with-maple-glaze-thumb.webp" width="72" height="72" alt="" loading="lazy">
         <span class="name">Pumpkin Bread with Maple Glaze</span>
         <span class="blurb">Spiced pumpkin loaf, streusel on top, maple glaze while it's hot.</span>
         <span class="facts"><span>~2¼ hr</span><span>1 loaf</span></span>
