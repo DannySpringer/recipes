@@ -9,6 +9,7 @@ Static recipe pages served by GitHub Pages from the repository root of `main`. N
 ```
 index.html                      list of all recipes (one tap card each)
 recipes/<slug>.html             one page per recipe, fully self-contained
+recipes/img/                    optional recipe photos (WebP)
 .claude/skills/add-recipe/      how to add a new recipe (use this skill)
 .nojekyll                       serve files as-is
 ```
@@ -59,6 +60,17 @@ Pick the closest group; add a new one (section plus jump link) only when a recip
 ```
 
 `--c` / `--c-dark` are the recipe page's light and dark `--accent` values. Time and yield match the page's `#meta` text.
+
+## Recipe photos (optional)
+
+A recipe can have one photo of the food. Only the dish: no people, hands with rings or tattoos, names, or anything that shows where it was taken.
+
+- Save two WebP files in `recipes/img/`, with metadata stripped (Pillow drops it by default):
+  - `<slug>.webp`: the hero, 1024px wide at most, quality about 72. Aim for under 150 KB.
+  - `<slug>-thumb.webp`: a 192×192 square crop centered on the dish, quality about 70.
+- Recipe page: put `<img class="hero" src="img/<slug>.webp" width="…" height="…" alt="…">` as the first thing in `<main>`. Use the real pixel size in `width`/`height` and the `aspect-ratio`. Write `alt` to describe the food. Copy the `.hero` rule from `pumpkin-bread-with-maple-glaze.html`.
+- Index card: add `has-thumb` to the card's class and put `<img class="thumb" src="recipes/img/<slug>-thumb.webp" width="72" height="72" alt="" loading="lazy">` as the card's first child. The empty `alt` is on purpose, because the card name already says what it is.
+- Never commit the original upload. Commit only the compressed copies.
 
 ## No personal information
 

@@ -24,6 +24,20 @@ Leave out anything personal: who sent it or where it came from, names, places, d
 
 Pick the recipe's category (Dinners, Sides & breads, or Sweets; see CLAUDE.md) and add an `<li>` to that group's `ul.list` in `index.html` using the card markup in CLAUDE.md, keeping the group sorted A to Z by name. `--c`/`--c-dark` are the page's accent colors; the facts match the page's `#meta` time and yield.
 
+## 3½. Add a photo, if one came with the recipe
+
+Follow "Recipe photos" in CLAUDE.md. First look at the image: it should show only food. Then make the hero and thumb WebP files with Pillow, outside any interpreter run from the upload's folder, for example:
+
+```python
+from PIL import Image
+im = Image.open(src).convert("RGB")
+im.thumbnail((1024, 1024)); im.save(f"recipes/img/{slug}.webp", "WEBP", quality=72, method=6)
+s = min(im.size); l = (im.width - s) // 2; t = (im.height - s) // 2
+im.crop((l, t, l + s, t + s)).resize((192, 192), Image.LANCZOS).save(f"recipes/img/{slug}-thumb.webp", "WEBP", quality=70, method=6)
+```
+
+Adjust the crop if the dish isn't centered.
+
 ## 4. Check it
 
 - Open `index.html` and the new page at phone width (about 390x844), in light and dark mode if you can. Nothing should scroll sideways, the header should stay pinned, and the back link and card should work.
