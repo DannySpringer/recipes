@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Korean fried chicken wings: double-fried until very crispy, then tossed in a sweet gochujang glaze.">
+<title>Dakgangjeong</title>
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: same template as the other recipe pages; recolored gochujang red */
+:root {
+  --bg: #f6f4ee;
+  --surface: #ffffff;
+  --fg: #22201c;
+  --muted: #645f57;
+  --line: #e2ded4;
+  --done: #a39d94;
+  --accent: #b3203a;
+  --accent-soft: #fbdde2;
+  --on-accent: #ffffff;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #151412; --surface: #1f1d1a; --fg: #ece9e3; --muted: #a9a49b; --line: #34312c; --done: #6c675f; --accent: #ff8197; --accent-soft: #3b1820; --on-accent: #21060b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #151412; --surface: #1f1d1a; --fg: #ece9e3; --muted: #a9a49b; --line: #34312c; --done: #6c675f; --accent: #ff8197; --accent-soft: #3b1820; --on-accent: #21060b;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--body); font-size: 1.125rem; line-height: 1.5;
+  padding-inline: 16px; padding-block: 0 48px;
+}
+.wrap { max-width: 34rem; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; }
+
+.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bg); padding-block: 12px 10px; margin-inline: -16px; padding-inline: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.top-row { max-width: 34rem; margin: 0 auto; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+h1 { font-family: var(--display); font-weight: 800; font-size: 1.6rem; line-height: 1.1; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+.meta { color: var(--muted); font-size: 0.95rem; white-space: nowrap; }
+.bar { max-width: 34rem; margin: 10px auto 0; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s; }
+
+.tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font: inherit; font-size: 0.95rem; color: var(--fg); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.chip:disabled { opacity: .5; cursor: default; }
+
+section { display: flex; flex-direction: column; gap: 0.6rem; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0; text-wrap: balance; }
+h2 .n { color: var(--accent); margin-right: .35em; }
+.opt { color: var(--muted); font-weight: 400; font-size: 1rem; }
+p { margin: 0; }
+.note { color: var(--muted); }
+.sub { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; margin-top: .25rem; }
+
+ul.checks { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+ul.checks li + li { border-top: 1px solid var(--line); }
+ul.checks label { display: flex; align-items: center; gap: 14px; padding: 14px 16px; cursor: pointer; min-height: 56px; }
+ul.checks input { appearance: none; flex: none; width: 28px; height: 28px; border: 2px solid var(--muted); border-radius: 8px; display: grid; place-content: center; margin: 0; cursor: pointer; }
+ul.checks input:checked { background: var(--accent); border-color: var(--accent); }
+ul.checks input:checked::after { content: ""; width: 8px; height: 14px; border: solid var(--on-accent); border-width: 0 3px 3px 0; transform: translateY(-2px) rotate(45deg); }
+ul.checks input:focus-visible, .chip:focus-visible, .step-btn:focus-visible, .big:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+ul.checks input:checked + span { color: var(--done); text-decoration: line-through; }
+.amt { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.step-btn {
+  font: inherit; display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 14px;
+  padding: 14px 16px; cursor: pointer; min-height: 56px;
+}
+.step-btn .box { flex: none; width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--muted); display: grid; place-content: center; }
+.step-btn[aria-pressed="true"] .box { background: var(--accent); border-color: var(--accent); }
+.step-btn[aria-pressed="true"] .box::after { content: ""; width: 7px; height: 13px; border: solid var(--on-accent); border-width: 0 3px 3px 0; transform: translateY(-2px) rotate(45deg); }
+.step-btn[aria-pressed="true"] .lbl { color: var(--done); }
+
+.milestone { background: var(--accent-soft); border-radius: 14px; padding: 12px 16px; font-weight: 700; }
+
+.timer { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.clock { font-family: var(--display); font-weight: 800; font-size: 3rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.clock.ring { color: var(--accent); animation: pulse 1s infinite; }
+.ends { color: var(--muted); font-size: .95rem; }
+@keyframes pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .clock.ring { animation: none; } .bar > i { transition: none; } }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.big { font: inherit; font-weight: 700; border: 0; border-radius: 12px; padding: 12px 20px; cursor: pointer; background: var(--accent); color: var(--on-accent); min-height: 48px; }
+.big.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); }
+
+footer { border-top: 1px solid var(--line); padding-top: 1rem; }
+.back { display: inline-flex; align-items: center; min-height: 32px; margin-bottom: 4px; color: var(--muted); font-size: .95rem; text-decoration: none; }
+.back:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-row"><a class="back" href="../index.html">&larr; All recipes</a></div>
+  <div class="top-row">
+    <h1>Dakgangjeong</h1>
+    <span class="meta" id="meta">1½ hr · serves 4–6</span>
+  </div>
+  <div class="bar" aria-hidden="true"><i id="bar"></i></div>
+</header>
+
+<main class="wrap">
+  <div class="tools" style="margin-top:1rem">
+    <button class="chip" id="wake" aria-pressed="false" type="button">Keep screen on</button>
+    <button class="chip" id="reset" type="button">Start over</button>
+  </div>
+
+  <section>
+    <h2><span class="n">0</span>Get everything out first</h2>
+    <p class="note">These are deep-fried twice. A heavy pot and a thermometer make it much easier.</p>
+    <p class="sub">For the sauce</p>
+    <ul class="checks">
+      <li><label><input type="checkbox" id="p1"><span><span class="amt">1 tbsp</span> toasted sesame oil</span></label></li>
+      <li><label><input type="checkbox" id="p2"><span>Garlic, enough for <span class="amt">1 tsp</span> grated</span></label></li>
+      <li><label><input type="checkbox" id="p3"><span>Fresh ginger, enough for <span class="amt">1 tsp</span> grated</span></label></li>
+      <li><label><input type="checkbox" id="p4"><span><span class="amt">3 tbsp</span> sugar</span></label></li>
+      <li><label><input type="checkbox" id="p5"><span><span class="amt">2–3 tbsp</span> gochujang (more for hotter)</span></label></li>
+      <li><label><input type="checkbox" id="p6"><span><span class="amt">1 tbsp</span> soy sauce</span></label></li>
+    </ul>
+    <p class="sub">For the wings</p>
+    <ul class="checks">
+      <li><label><input type="checkbox" id="p7"><span><span class="amt">3 lb</span> chicken wings</span></label></li>
+      <li><label><input type="checkbox" id="p8"><span><span class="amt">2 quarts</span> vegetable oil, for frying</span></label></li>
+      <li><label><input type="checkbox" id="p9"><span><span class="amt">1 cup</span> all-purpose flour</span></label></li>
+      <li><label><input type="checkbox" id="p10"><span><span class="amt">3 tbsp</span> cornstarch</span></label></li>
+      <li><label><input type="checkbox" id="p11"><span><span class="amt">1¾ cups</span> water (¼ cup for the sauce, 1½ cups for the batter)</span></label></li>
+      <li><label><input type="checkbox" id="p12" data-optional><span>Steamed rice and slaw <span class="opt">(optional, for serving)</span></span></label></li>
+    </ul>
+    <p class="note">No gochujang? Use the same amount of sriracha, and only 2 tbsp water in the sauce.</p>
+    <p class="sub">Tools</p>
+    <ul class="checks">
+      <li><label><input type="checkbox" id="t1"><span>Dutch oven or other heavy pot</span></label></li>
+      <li><label><input type="checkbox" id="t2"><span>Frying thermometer</span></label></li>
+      <li><label><input type="checkbox" id="t3"><span>Wire rack set in a rimmed baking sheet</span></label></li>
+      <li><label><input type="checkbox" id="t4"><span>Two large bowls, whisk, tongs</span></label></li>
+      <li><label><input type="checkbox" id="t5"><span>Rasp grater (for the garlic and ginger)</span></label></li>
+    </ul>
+    <div class="milestone" id="ms-prep" hidden>Everything's out. Sauce first, then the oil.</div>
+  </section>
+
+  <section>
+    <h2><span class="n">1</span>Prep the wings and aromatics</h2>
+    <ul class="checks">
+      <li><label><input type="checkbox" id="c1"><span>Cut the wings at the joints and throw away the tips</span></label></li>
+      <li><label><input type="checkbox" id="c2"><span>Grate <span class="amt">1 tsp</span> garlic to a paste</span></label></li>
+      <li><label><input type="checkbox" id="c3"><span>Grate <span class="amt">1 tsp</span> ginger</span></label></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="n">2</span>Make the sauce</h2>
+    <p>In a large bowl, microwave the sesame oil, garlic and ginger for 40 to 60 seconds, until bubbly and fragrant but not browned. Then whisk in:</p>
+    <ul class="checks">
+      <li><label><input type="checkbox" id="a1"><span><span class="amt">¼ cup</span> water</span></label></li>
+      <li><label><input type="checkbox" id="a2"><span><span class="amt">3 tbsp</span> sugar</span></label></li>
+      <li><label><input type="checkbox" id="a3"><span>The gochujang</span></label></li>
+      <li><label><input type="checkbox" id="a4"><span><span class="amt">1 tbsp</span> soy sauce</span></label></li>
+    </ul>
+    <p>Whisk until smooth and set it aside.</p>
+  </section>
+
+  <section>
+    <h2><span class="n">3</span>Heat the oil to 350°F</h2>
+    <p>Heat the oil in the Dutch oven over medium-high to 350°F. While it heats, whisk the batter in the second bowl:</p>
+    <ul class="checks">
+      <li><label><input type="checkbox" id="w1"><span><span class="amt">1 cup</span> flour</span></label></li>
+      <li><label><input type="checkbox" id="w2"><span><span class="amt">3 tbsp</span> cornstarch</span></label></li>
+      <li><label><input type="checkbox" id="w3"><span><span class="amt">1½ cups</span> water</span></label></li>
+    </ul>
+    <p>Whisk until smooth, and set the wire rack in the baking sheet.</p>
+    <button class="step-btn" id="s3" aria-pressed="false" type="button"><span class="box"></span><span class="lbl">Oil is at 350°F</span></button>
+  </section>
+
+  <section>
+    <h2><span class="n">4</span>First fry, batch 1, about 7 minutes</h2>
+    <p>Stir half the wings into the batter. With tongs, lift them out one at a time, let the extra batter drip off, and lower them into the oil. Turn the heat to <strong>high</strong>. Stir now and then so they don't stick. The oil temperature will drop a lot; that's normal. They're done when light golden and starting to crisp. Move them to the rack.</p>
+    <div class="timer" data-id="fry1" data-default="7">
+      <div class="clock" aria-live="polite">07:00</div>
+      <div class="ends" hidden></div>
+      <div class="row">
+        <button class="big go" type="button">Start 7-minute timer</button>
+        <button class="big ghost stop" type="button" hidden>Cancel</button>
+      </div>
+    </div>
+    <button class="step-btn" id="s4" aria-pressed="false" type="button"><span class="box"></span><span class="lbl">Batch 1 is on the rack</span></button>
+  </section>
+
+  <section>
+    <h2><span class="n">5</span>First fry, batch 2, about 7 minutes</h2>
+    <p>Bring the oil back to 350°F and do the same with the rest of the wings.</p>
+    <div class="timer" data-id="fry2" data-default="7">
+      <div class="clock" aria-live="polite">07:00</div>
+      <div class="ends" hidden></div>
+      <div class="row">
+        <button class="big go" type="button">Start 7-minute timer</button>
+        <button class="big ghost stop" type="button" hidden>Cancel</button>
+      </div>
+    </div>
+    <p>Then turn the heat to medium and let this batch rest 5 minutes.</p>
+    <div class="timer" data-id="rest" data-default="5">
+      <div class="clock" aria-live="polite">05:00</div>
+      <div class="ends" hidden></div>
+      <div class="row">
+        <button class="big go" type="button">Start 5-minute timer</button>
+        <button class="big ghost stop" type="button" hidden>Cancel</button>
+      </div>
+    </div>
+    <button class="step-btn" id="s5" aria-pressed="false" type="button"><span class="box"></span><span class="lbl">Batch 2 has rested</span></button>
+  </section>
+
+  <section>
+    <h2><span class="n">6</span>Second fry at 375°F, about 7 minutes</h2>
+    <p>Heat the oil to 375°F. Carefully put all the wings back in and cook, stirring now and then, until deep golden brown and very crispy. Back onto the rack for 2 minutes.</p>
+    <div class="timer" data-id="fry3" data-default="7">
+      <div class="clock" aria-live="polite">07:00</div>
+      <div class="ends" hidden></div>
+      <div class="row">
+        <button class="big go" type="button">Start 7-minute timer</button>
+        <button class="big ghost stop" type="button" hidden>Cancel</button>
+      </div>
+    </div>
+    <button class="step-btn" id="s6" aria-pressed="false" type="button"><span class="box"></span><span class="lbl">Wings are deep golden and crispy</span></button>
+  </section>
+
+  <section>
+    <h2><span class="n">7</span>Toss in the sauce</h2>
+    <p>Toss the wings in the sauce bowl until coated. Put them back on the rack for 2 minutes so the coating sets, then pile them onto a platter.</p>
+    <div class="timer" data-id="set" data-default="2">
+      <div class="clock" aria-live="polite">02:00</div>
+      <div class="ends" hidden></div>
+      <div class="row">
+        <button class="big go" type="button">Start 2-minute timer</button>
+        <button class="big ghost stop" type="button" hidden>Cancel</button>
+      </div>
+    </div>
+    <button class="step-btn" id="s7" aria-pressed="false" type="button"><span class="box"></span><span class="lbl">Glazed and set</span></button>
+    <div class="milestone" id="ms-done" hidden>Wings are ready. 🎉</div>
+  </section>
+
+  <footer>
+    <p class="note">Serves 4 to 6 as a main dish. Good with steamed white rice and a slaw.</p>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var KEY = "dakgangjeong-v1";
+  var state = {};
+  try { state = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { state = {}; }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  var boxes = [].slice.call(document.querySelectorAll("ul.checks input"));
+  var steps = [].slice.call(document.querySelectorAll(".step-btn"));
+  var prepIds = ["p1","p2","p3","p4","p5","p6","p7","p8","p9","p10","p11","t1","t2","t3","t4","t5"];
+
+  boxes.forEach(function (b) {
+    b.checked = !!state[b.id];
+    b.addEventListener("change", function () { state[b.id] = b.checked; save(); update(); });
+  });
+  steps.forEach(function (s) {
+    s.setAttribute("aria-pressed", state[s.id] ? "true" : "false");
+    s.addEventListener("click", function () {
+      state[s.id] = !state[s.id];
+      s.setAttribute("aria-pressed", state[s.id] ? "true" : "false");
+      save(); update();
+    });
+  });
+
+  function update() {
+    var counted = boxes.filter(function (b) { return !b.hasAttribute("data-optional"); });
+    var total = counted.length + steps.length, done = 0;
+    counted.forEach(function (b) { if (b.checked) done++; });
+    steps.forEach(function (s) { if (state[s.id]) done++; });
+    document.getElementById("bar").style.width = (done / total * 100) + "%";
+    document.getElementById("meta").textContent = done === 0 ? "1½ hr · serves 4–6" : done + " of " + total + " done";
+    document.getElementById("ms-prep").hidden = !prepIds.every(function (id) { return state[id]; });
+    document.getElementById("ms-done").hidden = !state.s7;
+  }
+  update();
+
+  // Keep screen on
+  var lock = null, wakeBtn = document.getElementById("wake");
+  function setWake(on) {
+    if (!on) { if (lock) { lock.release().catch(function(){}); lock = null; } wakeBtn.setAttribute("aria-pressed", "false"); wakeBtn.textContent = "Keep screen on"; return; }
+    if (!("wakeLock" in navigator)) { wakeBtn.textContent = "Screen lock not supported here"; return; }
+    navigator.wakeLock.request("screen").then(function (l) {
+      lock = l; wakeBtn.setAttribute("aria-pressed", "true"); wakeBtn.textContent = "Screen stays on ✓";
+      l.addEventListener("release", function () { if (lock === l) { lock = null; wakeBtn.setAttribute("aria-pressed", "false"); wakeBtn.textContent = "Keep screen on"; } });
+    }).catch(function () { wakeBtn.textContent = "Couldn't keep screen on"; });
+  }
+  wakeBtn.addEventListener("click", function () { setWake(!lock); });
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible" && wakeBtn.getAttribute("aria-pressed") === "true" && !lock) setWake(true);
+  });
+
+  // Timers (end time is saved, so a long timer survives closing the page)
+  var ctx = null;
+  function audio() { try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); ctx.resume(); } catch (e) {} }
+  function beep() {
+    if (ctx) {
+      try {
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.frequency.value = 880; o.connect(g); g.connect(ctx.destination);
+        g.gain.setValueAtTime(0.25, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+        o.start(); o.stop(ctx.currentTime + 0.5);
+      } catch (e) {}
+    }
+    try { navigator.vibrate && navigator.vibrate(300); } catch (e) {}
+  }
+  function fmt(s) {
+    var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), r = s % 60;
+    var mm = (m < 10 ? "0" : "") + m, rr = (r < 10 ? "0" : "") + r;
+    return h ? h + ":" + mm + ":" + rr : mm + ":" + rr;
+  }
+  function clockTime(t) { return new Date(t).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); }
+
+  var timers = [];
+  document.querySelectorAll(".timer").forEach(function (el) {
+    var id = el.dataset.id, skey = "timer-" + id;
+    var mins = +el.dataset.default, tick = null, ringTick = null;
+    var clock = el.querySelector(".clock"), ends = el.querySelector(".ends");
+    var go = el.querySelector(".go"), stop = el.querySelector(".stop");
+    var presets = [].slice.call(el.querySelectorAll(".presets .chip"));
+    var goLabel = go.textContent;
+
+    presets.forEach(function (c) {
+      c.addEventListener("click", function () {
+        if (state[skey]) return;
+        mins = +c.dataset.min;
+        presets.forEach(function (o) { o.setAttribute("aria-pressed", o === c ? "true" : "false"); });
+        clock.textContent = fmt(mins * 60);
+      });
+    });
+
+    function reset() {
+      clearInterval(tick); clearInterval(ringTick); tick = ringTick = null;
+      delete state[skey]; save();
+      clock.classList.remove("ring"); clock.textContent = fmt(mins * 60);
+      ends.hidden = true; go.hidden = false; go.textContent = goLabel;
+      stop.hidden = true; stop.textContent = "Cancel";
+      presets.forEach(function (c) { c.disabled = false; });
+    }
+    function run(endAt) {
+      go.hidden = true; stop.hidden = false;
+      presets.forEach(function (c) { c.disabled = true; });
+      ends.textContent = "Done at " + clockTime(endAt); ends.hidden = false;
+      function step() {
+        var left = Math.max(0, Math.round((endAt - Date.now()) / 1000));
+        clock.textContent = fmt(left);
+        if (left === 0) {
+          clearInterval(tick); tick = null;
+          clock.textContent = "Time's up!"; clock.classList.add("ring");
+          stop.textContent = "Done"; beep(); ringTick = setInterval(beep, 1500);
+        }
+      }
+      step(); tick = setInterval(step, 250);
+    }
+    go.addEventListener("click", function () {
+      audio();
+      state[skey] = Date.now() + mins * 60000; save();
+      run(state[skey]);
+    });
+    stop.addEventListener("click", reset);
+
+    clock.textContent = fmt(mins * 60);
+    if (state[skey]) run(state[skey]);
+    timers.push(reset);
+  });
+
+  document.getElementById("reset").addEventListener("click", function () {
+    timers.forEach(function (r) { r(); });
+    state = {}; save();
+    boxes.forEach(function (b) { b.checked = false; });
+    steps.forEach(function (s) { s.setAttribute("aria-pressed", "false"); });
+    update(); window.scrollTo({ top: 0 });
+  });
+})();
+</script>
+</body>
+</html>
