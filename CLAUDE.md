@@ -10,6 +10,7 @@ Static recipe pages served by GitHub Pages from the repository root of `main`. N
 index.html                      list of all recipes (one tap card each)
 recipes/<slug>.html             one page per recipe, fully self-contained
 recipes/img/                    optional recipe photos (WebP)
+games/<slug>/index.html         small browser games, one folder each (assets beside it)
 .claude/skills/add-recipe/      how to add a new recipe (use this skill)
 .nojekyll                       serve files as-is
 ```
@@ -48,6 +49,7 @@ The index groups recipes into categories, each a `<section class="group" id="...
 - `#dinners` **Dinners**: main dishes.
 - `#sides` **Sides & breads**: breads, dips, sauces, side dishes.
 - `#sweets` **Sweets**: cakes, quick breads, desserts.
+- `#games` **Games**: not recipes; links into `games/<slug>/`. Keep it last.
 
 Pick the closest group; add a new one (section plus jump link) only when a recipe truly fits none. Each recipe is one `<li>` in its group's list, sorted A to Z by name within the group:
 
