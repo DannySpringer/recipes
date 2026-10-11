@@ -1,0 +1,1253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sunstone">
+<meta name="application-name" content="Sunstone">
+<meta name="theme-color" content="#000000">
+<meta name="format-detection" content="telephone=no">
+<title>Quest for the Sunstone</title>
+<link rel="icon" href="data:,">
+<style>
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden;
+    position: fixed; inset: 0;
+    touch-action: none; overscroll-behavior: none;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #game {
+    position: fixed;
+    top: env(safe-area-inset-top, 0px); bottom: env(safe-area-inset-bottom, 0px);
+    left: env(safe-area-inset-left, 0px); right: env(safe-area-inset-right, 0px);
+    touch-action: none;
+  }
+  canvas { display: block; outline: none; touch-action: none; }
+  #rotate {
+    display: none; position: fixed; inset: 0; z-index: 10; background: rgba(0,0,0,0.92);
+    color: #7ee787; font: bold 18px monospace; align-items: center; justify-content: center; text-align: center;
+  }
+  /* phones held sideways: ask for portrait (the game still runs, just small) */
+  @media (orientation: landscape) and (pointer: coarse) and (max-height: 520px) {
+    #rotate { display: flex; }
+  }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.90.0/phaser.min.js"></script>
+</head>
+<body>
+<div id="game"></div>
+<div id="rotate">Please turn your phone<br>to portrait</div>
+<script>
+'use strict';
+/* =====================================================================
+   QUEST FOR THE SUNSTONE - a small Zelda-like for phones (portrait).
+
+   Screen layout (logical 320 wide; height follows the phone, 568-720):
+     y   0- 32  HUD (hearts, rupees, key)
+     y  32-416  map view: one 10 x 12 tile screen, 32px tiles
+     y 416-end  touch pad (d-pad/joystick left, A = sword, B = talk/open)
+
+   Keyboard: arrows/WASD move, Space/J/Z sword, E/K/X/Enter talk/open, R restart.
+   Story: get the key from the chest in the forest, unlock the cave in the
+   Rocky Hills, beat the Guardian and open the Sunstone chest.
+
+   Test/dev URL params (used by tests/, never needed for play):
+     start=play  skip the title     at=sx,sy,col,row,dir  start position
+     key=1  start with the key      hp=N  start hp      freeze=1  enemies hold still
+     shot=1  freeze the frame mid-swing (for screenshots)
+   ===================================================================== */
+
+const TILE = 32, COLS = 10, ROWS = 12;
+const VIEW_W = COLS * TILE, VIEW_H = ROWS * TILE;   // 320 x 384
+const HUD_H = 32;
+const PAD_Y = HUD_H + VIEW_H;                       // 416
+const GAME_W = VIEW_W;
+const ASSET = 'sprites/32/';
+const ASSET64 = 'sprites/64/';   // hero frames: 64x64 canvas, hero ~32px, feet at y=57
+let PARAMS = new URLSearchParams(location.search);
+
+function wantedHeight() {
+  const el = document.getElementById('game');
+  const w = el.clientWidth || window.innerWidth, h = el.clientHeight || window.innerHeight;
+  return Math.round(Math.min(720, Math.max(568, GAME_W * h / Math.max(1, w))));
+}
+let GAME_H = wantedHeight();
+
+const SPRITES = [
+  'hero_down', 'hero_up', 'hero_left', 'hero_right', 'sword',
+  'slime', 'bat', 'octo', 'villager', 'sign', 'chest_closed', 'chest_open',
+  'heart', 'heart_half', 'heart_empty', 'rupee', 'key',
+  'tile_grass', 'tile_flowers', 'tile_path', 'tile_bridge', 'tile_cave_floor',
+  'tile_tree', 'tile_rock', 'tile_water', 'tile_bush', 'tile_cave_wall',
+  'tile_house_wall', 'tile_roof', 'tile_door_locked', 'tile_door_open'
+];
+// Optional sprites: used when present, the game falls back gracefully when missing.
+const OPTIONAL = ['hero_attack'];
+// Preferred hero set: 64x64 frames (f_hero_<dir>, f_hero_walk_<dir>, f_hero_windup_<dir>, f_hero_strike_<dir>).
+// Fallback 1: 32x32 hero_attack_<dir> / hero_walk2_<dir> / hero_windup_<dir>. Fallback 2: rotated sword sprite.
+const HERO64 = [];
+for (const d of ['down', 'up', 'left', 'right']) {
+  OPTIONAL.push('hero_attack_' + d, 'hero_walk2_' + d, 'hero_windup_' + d);
+  for (const f of ['hero', 'hero_walk', 'hero_windup', 'hero_strike']) HERO64.push('f_' + f + '_' + d);
+}
+const MISSING = [];
+
+/* ---------- map legend ---------- */
+const LEGEND = {
+  '.': 'tile_grass', ',': 'tile_flowers', '=': 'tile_path', 'b': 'tile_bridge',
+  'f': 'tile_cave_floor', 'O': 'tile_door_open',
+  'T': 'tile_tree', 'R': 'tile_rock', 'W': 'tile_water', 'B': 'tile_bush',
+  '#': 'tile_cave_wall', 'H': 'tile_house_wall', '^': 'tile_roof', 'D': 'tile_door_locked'
+};
+const SOLID = new Set(['T', 'R', 'W', 'B', '#', 'H', '^', 'D']);
+
+/* ---------- the world: screens keyed "sx,sy" ----------
+   Overworld is 2x2 (0..1, 0..1). The dungeon is x=3 (not adjacent), reached by warps. */
+const WORLD_DEF = {
+  '0,0': {
+    name: 'Willow Village',
+    map: [
+      'TTTTTTTTTT',
+      'T^^^^^^..T',
+      'T^^^^^^,.T',
+      'THHHDHH..T',
+      'T...=....T',
+      'T...=....T',
+      'T...======',
+      'T.B.=....T',
+      'T...=..B.T',
+      'T,..=..,.T',
+      'TT..=...TT',
+      'TTTT=TTTTT'
+    ],
+    objects: [
+      { t: 'door', c: 4, r: 3 },
+      { t: 'villager', c: 7, r: 5 },
+      { t: 'sign', c: 2, r: 5 }
+    ]
+  },
+  '1,0': {
+    name: 'Whispering Forest',
+    map: [
+      'TTTTTTTTTT',
+      'T..T...T.T',
+      'T.....B..T',
+      'TT..T....T',
+      'T....,.T.T',
+      'T.T......T',
+      '===......T',
+      'T.T..=...T',
+      'T....=.T.T',
+      'TT.R.=...T',
+      'T....=.R.T',
+      'TTTTT=TTTT'
+    ],
+    objects: [
+      { t: 'chest', c: 8, r: 3 },
+      { t: 'enemy', kind: 'bat', c: 3, r: 4 },
+      { t: 'enemy', kind: 'bat', c: 7, r: 9 },
+      { t: 'enemy', kind: 'slime', c: 4, r: 2 },
+      { t: 'rupee', c: 8, r: 1 },
+      { t: 'rupee', c: 1, r: 10 }
+    ]
+  },
+  '0,1': {
+    name: 'Sunny Meadow',
+    map: [
+      'TTTT=TTTTT',
+      'T...=....T',
+      'T.,.=..,.T',
+      'T...==...T',
+      'TWWWWbWWWT',
+      'TWWWWbWWWT',
+      'T....=....',
+      'T.R..=.R.T',
+      'T,...=..,T',
+      'T..B...B.T',
+      'T....,...T',
+      'TTTTTTTTTT'
+    ],
+    objects: [
+      { t: 'enemy', kind: 'slime', c: 3, r: 7 },
+      { t: 'enemy', kind: 'slime', c: 6, r: 9 },
+      { t: 'enemy', kind: 'octo', c: 4, r: 10 },
+      { t: 'rupee', c: 1, r: 1 },
+      { t: 'rupee', c: 8, r: 2 },
+      { t: 'rupee', c: 8, r: 8 },
+      { t: 'heart', c: 1, r: 10 }
+    ]
+  },
+  '1,1': {
+    name: 'Rocky Hills',
+    map: [
+      'TTTTT=TTTT',
+      'T....=..,T',
+      'T.B..=...T',
+      'T....=.R.T',
+      'T,R..=...T',
+      'T....=..BT',
+      '======...T',
+      'T....=..,T',
+      'RRR##D##RR',
+      'RRR#####RR',
+      'RRRRRRRRRR',
+      'RRRRRRRRRR'
+    ],
+    objects: [
+      { t: 'cavedoor', c: 5, r: 8 },
+      { t: 'enemy', kind: 'octo', c: 2, r: 3 },
+      { t: 'enemy', kind: 'slime', c: 7, r: 5 },
+      { t: 'enemy', kind: 'bat', c: 3, r: 1 },
+      { t: 'rupee', c: 8, r: 1 }
+    ]
+  },
+  '3,1': {
+    name: 'Echo Cave',
+    dungeon: true,
+    map: [
+      '#####f####',
+      '#ffffffff#',
+      '#f##ff##f#',
+      '#f#ffff#f#',
+      '#fff##fff#',
+      '###ffff###',
+      '#fff##fff#',
+      '#f#ffff#f#',
+      '#f#f##f#f#',
+      '#ffffffff#',
+      '#ffffffff#',
+      '#####O####'
+    ],
+    objects: [
+      { t: 'enemy', kind: 'octo', c: 5, r: 3 },
+      { t: 'enemy', kind: 'bat', c: 2, r: 6 },
+      { t: 'enemy', kind: 'bat', c: 8, r: 9 },
+      { t: 'enemy', kind: 'slime', c: 3, r: 9 },
+      { t: 'heart', c: 1, r: 1 },
+      { t: 'rupee', c: 8, r: 1 }
+    ]
+  },
+  '3,0': {
+    name: "Guardian's Hall",
+    dungeon: true,
+    map: [
+      '##########',
+      '#ffffffff#',
+      '#ffffffff#',
+      '#f#ffff#f#',
+      '#ffffffff#',
+      '#ffffffff#',
+      '#f#ffff#f#',
+      '#ffffffff#',
+      '#ffffffff#',
+      '#ff#ff#ff#',
+      '#ffffffff#',
+      '#####f####'
+    ],
+    objects: [
+      { t: 'treasure', c: 5, r: 2 },
+      { t: 'enemy', kind: 'boss', c: 5, r: 5 }
+    ]
+  }
+};
+// warp tiles: standing on these tiles moves the hero to another screen
+const WARPS = {
+  '1,1:5,8': { screen: '3,1', c: 5, r: 10, dir: 'up' },     // cave door -> dungeon
+  '3,1:5,11': { screen: '1,1', c: 5, r: 7, dir: 'down' }    // dungeon exit -> hills
+};
+
+const ENEMY = {
+  slime: { tex: 'slime', hp: 1, speed: 24, dmg: 1, hw: 7, hh: 6, scale: 0.7 },
+  bat:   { tex: 'bat',   hp: 1, speed: 46, dmg: 1, hw: 7, hh: 6, scale: 0.7, flying: true },
+  octo:  { tex: 'octo',  hp: 2, speed: 30, dmg: 1, hw: 7, hh: 7, scale: 0.75, shoots: true },
+  boss:  { tex: 'octo',  hp: 6, speed: 26, dmg: 2, hw: 13, hh: 12, scale: 1.45, shoots: true, boss: true }
+};
+
+const DIRS = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
+const SWORD_ANGLE = { up: 0, right: 90, down: 180, left: -90 };
+const SWING_TIME = 0.24, SWING_COOLDOWN = 0.32, PLAYER_SPEED = 74;
+const HERO_SCALE = 0.85;
+
+/* =====================================================================
+   INPUT: our own window keyboard listeners (Phaser's keyboard plugin is off),
+   so keys work no matter which element has focus.
+   ===================================================================== */
+const INPUT = { keys: new Set(), a: false, b: false, r: false };
+const KEYMAP = {
+  ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down',
+  ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right',
+  Space: 'a', KeyJ: 'a', KeyZ: 'a', KeyE: 'b', KeyK: 'b', KeyX: 'b', Enter: 'b', KeyR: 'r'
+};
+const KEYCODES = { 38: 'ArrowUp', 40: 'ArrowDown', 37: 'ArrowLeft', 39: 'ArrowRight', 32: 'Space',
+  87: 'KeyW', 65: 'KeyA', 83: 'KeyS', 68: 'KeyD', 69: 'KeyE', 74: 'KeyJ', 75: 'KeyK',
+  90: 'KeyZ', 88: 'KeyX', 13: 'Enter', 82: 'KeyR' };
+function keyAction(e) { return KEYMAP[e.code] || KEYMAP[KEYCODES[e.keyCode]]; }
+window.addEventListener('keydown', e => {
+  const k = keyAction(e);
+  if (!k) return;
+  e.preventDefault();
+  if (!e.repeat) { if (k === 'a') INPUT.a = true; if (k === 'b') INPUT.b = true; if (k === 'r') INPUT.r = true; }
+  INPUT.keys.add(k);
+}, true);
+window.addEventListener('keyup', e => { const k = keyAction(e); if (k) INPUT.keys.delete(k); }, true);
+window.addEventListener('blur', () => INPUT.keys.clear());
+// no page scroll / zoom / long-press menu / text selection on touch
+window.addEventListener('contextmenu', e => e.preventDefault());
+for (const ev of ['touchmove', 'gesturestart', 'gesturechange', 'dblclick']) {
+  document.addEventListener(ev, e => e.preventDefault(), { passive: false });
+}
+
+/* ---------- tiny WebAudio sound effects (no files) ---------- */
+let AC = null;
+function unlockAudio() {
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === 'suspended') AC.resume();
+  } catch (err) { /* audio is optional */ }
+}
+function sfx(type) {
+  const S = {
+    swing: [520, 260, 0.08, 'square', 0.04], hit: [220, 70, 0.12, 'square', 0.07],
+    coin: [988, 1480, 0.12, 'square', 0.04], hurt: [160, 50, 0.22, 'sawtooth', 0.07],
+    open: [523, 1046, 0.35, 'triangle', 0.08], talk: [700, 700, 0.03, 'square', 0.03],
+    cut: [300, 120, 0.06, 'triangle', 0.05], shoot: [400, 200, 0.07, 'square', 0.03],
+    boss: [110, 40, 0.6, 'sawtooth', 0.09]
+  }[type];
+  if (!S || !AC) return;
+  try {
+    const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+    o.type = S[3];
+    o.frequency.setValueAtTime(S[0], t);
+    o.frequency.exponentialRampToValueAtTime(S[1], t + S[2]);
+    g.gain.setValueAtTime(S[4], t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + S[2]);
+    o.connect(g).connect(AC.destination);
+    o.start(t); o.stop(t + S[2] + 0.02);
+  } catch (err) { /* audio is optional */ }
+}
+
+function buildWorld() {
+  const w = {};
+  for (const [k, def] of Object.entries(WORLD_DEF)) {
+    const [sx, sy] = k.split(',').map(Number);
+    def.map.forEach((row, r) => { if (row.length !== COLS) console.warn(`map ${k} row ${r} has ${row.length} tiles`); });
+    w[k] = { key: k, sx, sy, name: def.name, dungeon: !!def.dungeon, map: def.map.map(row => row.split('')), objects: def.objects.map(o => ({ ...o })) };
+  }
+  return w;
+}
+const tileCenter = (s, c, r) => ({ x: s.sx * VIEW_W + c * TILE + 16, y: s.sy * VIEW_H + r * TILE + 16 });
+
+/* =====================================================================
+   BOOT: load sprites (optional ones may 404 without breaking anything)
+   ===================================================================== */
+class Boot extends Phaser.Scene {
+  constructor() { super('Boot'); }
+  preload() {
+    this.add.rectangle(GAME_W / 2, GAME_H / 2, 164, 12).setStrokeStyle(1, 0xffffff);
+    const bar = this.add.rectangle(GAME_W / 2 - 80, GAME_H / 2, 0, 8, 0x7ee787).setOrigin(0, 0.5);
+    this.load.on('progress', v => { bar.width = 160 * v; });
+    this.load.on('loaderror', f => { MISSING.push(f.key); });
+    for (const n of SPRITES) this.load.image(n, ASSET + n + '.png');
+    for (const n of OPTIONAL) this.load.image(n, ASSET + n + '.png');
+    for (const n of HERO64) this.load.image(n, ASSET64 + n.slice(2) + '.png');
+  }
+  create() {
+    const req = SPRITES.filter(n => !this.textures.exists(n));
+    if (req.length) console.warn('missing required sprites:', req.join(', '));
+    this.scene.start('Play');
+  }
+}
+
+/* =====================================================================
+   PLAY
+   ===================================================================== */
+class Play extends Phaser.Scene {
+  constructor() { super('Play'); }
+
+  create() {
+    window.SCENE = this;
+    if (this.started) PARAMS = new URLSearchParams();   // dev/test params only apply to the first game
+    this.started = true;
+    this.state = 'title';  // title | play | dialog | scroll | win | over
+    this.world = buildWorld();
+    this.rupees = 0;
+    this.hasKey = PARAMS.get('key') === '1';
+    this.freeze = PARAMS.get('freeze') === '1';
+    this.shotMode = PARAMS.get('shot') === '1';
+    this.cur = { sx: 0, sy: 0 };
+    this.enemies = []; this.pickups = []; this.solids = []; this.interactables = []; this.shots = [];
+    this.tapped = false;
+    this.stats = { swings: 0, bushesCut: 0, kills: 0, interacts: 0, warps: 0, deaths: 0 };
+    this.startTime = 0;
+    this.joy = { id: null, bx: 0, by: 0, vx: 0, vy: 0 };
+    INPUT.a = INPUT.b = INPUT.r = false;
+    this.has = n => this.textures.exists(n) && !MISSING.includes(n);
+    // use the 64px frame set only if every frame of it loaded
+    this.use64 = HERO64.every(n => this.has(n));
+
+    // world objects render through the main camera (map area), UI through a second camera
+    this.worldLayer = this.add.layer();
+    this.uiLayer = this.add.layer();
+    const cam = this.cameras.main;
+    cam.setViewport(0, HUD_H, VIEW_W, VIEW_H).setBackgroundColor('#000000').setScroll(0, 0);
+    cam.ignore(this.uiLayer);
+    this.uiCam = this.cameras.add(0, 0, GAME_W, GAME_H);
+    this.uiCam.ignore(this.worldLayer);
+
+    this.buildTiles();
+    this.buildObjects();
+    this.buildPlayer();
+    this.buildHUD();
+    this.buildPad();
+    this.buildDialog();
+    this.buildOverlays();
+    this.layout();
+    this.applyParams();
+
+    this.input.addPointer(3);
+    this.input.on('pointerdown', this.onPointerDown, this);
+    this.input.on('pointermove', this.onPointerMove, this);
+    this.input.on('pointerup', this.onPointerUp, this);
+    this.input.on('pointerupoutside', this.onPointerUp, this);
+    this.input.on('gameout', () => this.releaseJoy());
+
+    this.updateHUD();
+    if (PARAMS.get('start') === 'play') { this.state = 'play'; this.startTime = this.time.now; this.showArea(); }
+    else this.showOverlay(this.titleOverlay);
+  }
+
+  applyParams() {
+    const at = PARAMS.get('at');
+    if (at) {
+      const [sx, sy, c, r, dir] = at.split(',');
+      const s = this.world[sx + ',' + sy];
+      if (s) { this.placePlayer(s, +c, +r, DIRS[dir] ? dir : 'down'); }
+    }
+    const hp = parseInt(PARAMS.get('hp'), 10);
+    if (hp > 0) this.player.hp = Math.min(this.player.maxHp, hp);
+  }
+
+  placePlayer(s, c, r, dir) {
+    const p = this.player, pos = tileCenter(s, c, r);
+    p.x = pos.x; p.y = pos.y; p.dir = dir;
+    this.cur = { sx: s.sx, sy: s.sy };
+    this.cameras.main.setScroll(s.sx * VIEW_W, s.sy * VIEW_H);
+  }
+
+  w(obj) { this.worldLayer.add(obj); return obj; }
+  u(obj) { this.uiLayer.add(obj); return obj; }
+
+  /* ---------------- building ---------------- */
+  buildTiles() {
+    this.tileImgs = {};
+    for (const s of Object.values(this.world)) {
+      this.tileImgs[s.key] = s.map.map((row, r) => row.map((ch, c) => {
+        const p = tileCenter(s, c, r);
+        return this.w(this.add.image(p.x, p.y, LEGEND[ch]).setDepth(-1000));
+      }));
+    }
+  }
+
+  setTile(s, c, r, ch) {
+    s.map[r][c] = ch;
+    this.tileImgs[s.key][r][c].setTexture(LEGEND[ch]);
+  }
+
+  buildObjects() {
+    for (const s of Object.values(this.world)) {
+      for (const o of s.objects) {
+        const p = tileCenter(s, o.c, o.r);
+        if (o.t === 'enemy') this.spawnEnemy(o.kind, p.x, p.y, s);
+        else if (o.t === 'rupee' || o.t === 'heart') this.spawnPickup(o.t, p.x, p.y, s.key);
+        else if (o.t === 'door' || o.t === 'cavedoor') this.interactables.push({ kind: o.t, x: p.x, y: p.y, screen: s.key, c: o.c, r: o.r, open: false });
+        else {
+          const tex = { villager: 'villager', sign: 'sign', chest: 'chest_closed', treasure: 'chest_closed' }[o.t];
+          const scale = o.t === 'villager' ? 0.9 : o.t === 'treasure' ? 1.0 : 0.8;
+          const spr = this.w(this.add.image(p.x, p.y - 4, tex).setScale(scale).setDepth(p.y));
+          if (o.t === 'treasure') spr.setTint(0xffe9a0);
+          this.interactables.push({ kind: o.t, x: p.x, y: p.y, screen: s.key, spr, open: false });
+          this.solids.push({ x: p.x, y: p.y + 2, hw: 10, hh: 8 });
+        }
+      }
+    }
+  }
+
+  spawnEnemy(kind, x, y, s) {
+    const d = ENEMY[kind];
+    const e = {
+      kind, def: d, x, y, hw: d.hw, hh: d.hh, hp: d.hp, flying: !!d.flying, screen: s.key,
+      bounds: { L: s.sx * VIEW_W + 36, T: s.sy * VIEW_H + 36, R: (s.sx + 1) * VIEW_W - 36, B: (s.sy + 1) * VIEW_H - 36 },
+      dir: { x: 0, y: 0 }, vx: 0, vy: 0, t: Math.random(), knock: 0, kx: 0, ky: 0, hurt: 0, dead: false,
+      fire: 1.5 + Math.random() * 2, phase: Math.random() * 6,
+      spr: this.w(this.add.image(x, y, d.tex).setScale(d.scale))
+    };
+    if (d.boss) e.spr.setTint(0xff9a6a);
+    this.enemies.push(e);
+  }
+
+  spawnPickup(kind, x, y, screen) {
+    const spr = this.w(this.add.image(x, y, kind).setScale(kind === 'rupee' ? 0.55 : 0.5).setDepth(y - 8));
+    this.pickups.push({ kind, x, y, screen, spr, t: Math.random() * 6, taken: false });
+  }
+
+  buildPlayer() {
+    // slash arc texture: a crescent in front of the hero that shows the sword's reach
+    if (!this.textures.exists('slash')) {
+      const g = this.make.graphics({ x: 0, y: 0, add: false });
+      g.lineStyle(7, 0xbfe6ff, 0.35); g.beginPath(); g.arc(40, 40, 26, -1.0, 1.0); g.strokePath();
+      g.lineStyle(3, 0xffffff, 0.95); g.beginPath(); g.arc(40, 40, 26, -0.9, 0.9); g.strokePath();
+      g.generateTexture('slash', 80, 80); g.destroy();
+    }
+    const s = this.world['0,0'], p = tileCenter(s, 4, 5);
+    this.player = {
+      x: p.x, y: p.y, hw: 6, hh: 6, dir: 'down', hp: 6, maxHp: 6,
+      invuln: 0, swing: 0, swingCd: 0, knock: 0, kx: 0, ky: 0, moving: false,
+      spr: this.w(this.add.image(p.x, p.y, 'hero_down').setScale(HERO_SCALE)),
+      sword: this.w(this.add.image(p.x, p.y, 'sword').setScale(0.7).setOrigin(0.5, 0.92).setVisible(false)),
+      slash: this.w(this.add.image(p.x, p.y, 'slash').setVisible(false))
+    };
+  }
+
+  buildHUD() {
+    this.u(this.add.rectangle(0, 0, GAME_W, HUD_H, 0x000000).setOrigin(0));
+    this.heartImgs = [0, 1, 2].map(i => this.u(this.add.image(16 + i * 20, 16, 'heart').setScale(0.55)));
+    this.u(this.add.image(232, 16, 'rupee').setScale(0.55));
+    this.rupeeText = this.u(this.add.text(244, 8, '000', { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' }).setResolution(3));
+    this.keyIcon = this.u(this.add.image(300, 16, 'key').setScale(0.55).setAlpha(0.2));
+    this.areaText = this.u(this.add.text(GAME_W / 2, HUD_H + 14, '', {
+      fontFamily: 'monospace', fontSize: '15px', color: '#ffffff', stroke: '#000000', strokeThickness: 4
+    }).setOrigin(0.5, 0).setResolution(3).setAlpha(0));
+    // boss health bar (shown in the Guardian's Hall)
+    this.bossBar = this.u(this.add.container(0, 0).setVisible(false));
+    this.bossBar.add(this.add.text(GAME_W / 2, PAD_Y - 16, 'GUARDIAN', { fontFamily: 'monospace', fontSize: '10px', color: '#ffb08a', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5, 1).setResolution(3));
+    this.bossBar.add(this.add.rectangle(GAME_W / 2 - 60, PAD_Y - 10, 120, 6, 0x000000, 0.7).setOrigin(0, 0.5).setStrokeStyle(1, 0xffffff));
+    this.bossFill = this.add.rectangle(GAME_W / 2 - 59, PAD_Y - 10, 118, 4, 0xff5a3a).setOrigin(0, 0.5);
+    this.bossBar.add(this.bossFill);
+  }
+
+  buildPad() {
+    this.padBg = this.u(this.add.rectangle(0, PAD_Y, GAME_W, 10, 0x15151f).setOrigin(0));
+    this.u(this.add.rectangle(0, PAD_Y, GAME_W, 2, 0x3a3a55).setOrigin(0));
+    // joystick / d-pad: touching the pad presses that direction immediately;
+    // touching elsewhere in the left half re-centres the stick under the thumb.
+    this.JOY_R = 50; this.JOY_MAX = 40;
+    this.joyBase = this.u(this.add.container(0, 0));
+    this.joyBase.add(this.add.circle(0, 0, this.JOY_R, 0xffffff, 0.07).setStrokeStyle(2, 0xffffff, 0.28));
+    for (const [ang, dx, dy] of [[0, 0, -1], [90, 1, 0], [180, 0, 1], [270, -1, 0]]) {
+      this.joyBase.add(this.add.triangle(dx * 36, dy * 36, 0, 6, 6, -4, 12, 6, 0xffffff, 0.35).setAngle(ang));
+    }
+    this.joyKnob = this.u(this.add.circle(0, 0, 22, 0xffffff, 0.35).setStrokeStyle(2, 0xffffff, 0.5));
+    this.btnA = { x: 0, y: 0, r: 33 };
+    this.btnB = { x: 0, y: 0, r: 30 };
+    this.btnAGfx = this.u(this.add.circle(0, 0, this.btnA.r, 0xc83a3a).setStrokeStyle(3, 0xff8a8a));
+    this.btnAIcon = this.u(this.add.image(0, 0, 'sword').setScale(0.6).setAngle(45));
+    this.btnALabel = this.u(this.add.text(0, 0, 'A  SWORD', { fontFamily: 'monospace', fontSize: '11px', color: '#ff9a9a' }).setOrigin(0.5).setResolution(3));
+    this.btnBGfx = this.u(this.add.circle(0, 0, this.btnB.r, 0x3a62c8).setStrokeStyle(3, 0x8ab0ff));
+    this.btnBText = this.u(this.add.text(0, 0, 'B', { fontFamily: 'monospace', fontSize: '20px', color: '#ffffff' }).setOrigin(0.5).setResolution(3));
+    this.btnBLabel = this.u(this.add.text(0, 0, 'B  ----', { fontFamily: 'monospace', fontSize: '11px', color: '#9ab8ff' }).setOrigin(0.5).setResolution(3));
+    const touch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    this.hint = this.u(this.add.text(GAME_W / 2, PAD_Y + 8, touch ? '' : 'keys: arrows/WASD  space=A  E=B  R=restart',
+      { fontFamily: 'monospace', fontSize: '9px', color: '#6a6a85' }).setOrigin(0.5, 0).setResolution(3));
+  }
+
+  // position everything that depends on the game height (called on resize too)
+  layout() {
+    const PAD_H = GAME_H - PAD_Y;
+    const cy = PAD_Y + Math.min(PAD_H * 0.5, 150);
+    this.uiCam.setSize(GAME_W, GAME_H);
+    this.padBg.setSize(GAME_W, PAD_H);
+    this.joyHome = { x: 82, y: cy };
+    if (this.joy.id === null) { this.joy.bx = this.joyHome.x; this.joy.by = this.joyHome.y; }
+    this.joyBase.setPosition(this.joy.bx, this.joy.by);
+    this.joyKnob.setPosition(this.joy.bx, this.joy.by);
+    this.btnA.x = 270; this.btnA.y = cy - 28;
+    this.btnB.x = 198; this.btnB.y = Math.min(cy + 28, GAME_H - 8 - this.btnB.r - 9);
+    this.btnAGfx.setPosition(this.btnA.x, this.btnA.y);
+    this.btnAIcon.setPosition(this.btnA.x, this.btnA.y);
+    this.btnALabel.setPosition(this.btnA.x, this.btnA.y + this.btnA.r + 11);
+    this.btnBGfx.setPosition(this.btnB.x, this.btnB.y);
+    this.btnBText.setPosition(this.btnB.x, this.btnB.y);
+    this.btnBLabel.setPosition(this.btnB.x, this.btnB.y + this.btnB.r + 11);
+    for (const o of [this.titleOverlay, this.winOverlay, this.overOverlay]) {
+      o.bg.setSize(GAME_W, GAME_H);
+    }
+  }
+
+  resizeTo(h) {
+    if (h === GAME_H) return;
+    GAME_H = h;
+    this.scale.setGameSize(GAME_W, GAME_H);
+    this.layout();
+  }
+
+  buildDialog() {
+    const y = PAD_Y - 116;
+    this.dialogBox = this.u(this.add.container(0, 0).setVisible(false).setDepth(50));
+    this.dialogBox.add(this.add.rectangle(8, y, GAME_W - 16, 108, 0x000000, 0.9).setOrigin(0).setStrokeStyle(2, 0xffffff));
+    this.dialogText = this.add.text(18, y + 10, '', {
+      fontFamily: 'monospace', fontSize: '13px', color: '#ffffff', lineSpacing: 4, wordWrap: { width: GAME_W - 40 }
+    }).setResolution(3);
+    this.dialogMore = this.add.text(GAME_W - 22, y + 92, '▼', { fontFamily: 'monospace', fontSize: '12px', color: '#ffd84a' }).setOrigin(0.5).setResolution(3);
+    this.dialogBox.add([this.dialogText, this.dialogMore]);
+  }
+
+  buildOverlays() {
+    const mk = (title, sub, color, hero) => {
+      const c = this.u(this.add.container(0, 0).setVisible(false).setDepth(100));
+      c.bg = this.add.rectangle(0, 0, GAME_W, GAME_H, 0x000000, 0.8).setOrigin(0);
+      c.add(c.bg);
+      c.add(this.add.text(GAME_W / 2, 150, title, { fontFamily: 'monospace', fontSize: '28px', color, stroke: '#000', strokeThickness: 6, align: 'center' }).setOrigin(0.5).setResolution(3));
+      if (hero) c.add(this.add.image(GAME_W / 2, 232, hero).setScale(2));
+      const s = this.add.text(GAME_W / 2, 280, sub, { fontFamily: 'monospace', fontSize: '13px', color: '#ffffff', align: 'center', lineSpacing: 6 }).setOrigin(0.5, 0).setResolution(3);
+      c.add(s); c.sub = s;
+      return c;
+    };
+    this.titleOverlay = mk('QUEST FOR\nTHE SUNSTONE',
+      'Find the key, unlock the cave,\ndefeat the Guardian.\n\nD-pad: move\nA: sword    B: talk / open\n\nTap to start', '#7ee787', 'hero_down');
+    this.winOverlay = mk('YOU WIN!', '', '#ffd84a', 'hero_down');
+    this.overOverlay = mk('GAME OVER', 'Tap to try again', '#ff6b6b', null);
+  }
+
+  showOverlay(c) { c.setVisible(true); this.overlayReadyAt = this.time.now + 600; }
+
+  /* ---------------- touch input ---------------- */
+  onPointerDown(ptr) {
+    const x = ptr.x, y = ptr.y;
+    unlockAudio();   // the first touch unlocks audio on iOS
+    if (this.state === 'title' || this.state === 'win' || this.state === 'over') { this.tapped = true; return; }
+    if (y >= PAD_Y) {
+      if (Math.hypot(x - this.btnA.x, y - this.btnA.y) <= this.btnA.r + 16) { INPUT.a = true; this.flashBtn(this.btnAGfx); return; }
+      if (Math.hypot(x - this.btnB.x, y - this.btnB.y) <= this.btnB.r + 14) { INPUT.b = true; this.flashBtn(this.btnBGfx); return; }
+      if (x < GAME_W * 0.55 && this.joy.id === null) {
+        this.joy.id = ptr.id;
+        if (Math.hypot(x - this.joyHome.x, y - this.joyHome.y) <= this.JOY_R + 18) {
+          // on the d-pad: press that direction straight away
+          this.joy.bx = this.joyHome.x; this.joy.by = this.joyHome.y;
+        } else {
+          // elsewhere: floating stick re-centres under the thumb
+          this.joy.bx = x;
+          this.joy.by = Math.max(y, PAD_Y + 12);
+        }
+        this.joyBase.setPosition(this.joy.bx, this.joy.by);
+        this.updateJoy(x, y);
+      }
+    } else if (this.state === 'dialog') {
+      this.tapped = true;
+    }
+  }
+  onPointerMove(ptr) { if (ptr.id === this.joy.id && ptr.isDown) this.updateJoy(ptr.x, ptr.y); }
+  onPointerUp(ptr) { if (ptr.id === this.joy.id) this.releaseJoy(); }
+  releaseJoy() {
+    this.joy.id = null; this.joy.vx = this.joy.vy = 0;
+    this.joy.bx = this.joyHome.x; this.joy.by = this.joyHome.y;
+    this.joyBase.setPosition(this.joy.bx, this.joy.by);
+    this.joyKnob.setPosition(this.joy.bx, this.joy.by);
+  }
+  updateJoy(x, y) {
+    let dx = x - this.joy.bx, dy = y - this.joy.by;
+    const d = Math.hypot(dx, dy), max = this.JOY_MAX;
+    if (d > max) { dx = dx / d * max; dy = dy / d * max; }
+    this.joyKnob.setPosition(this.joy.bx + dx, this.joy.by + dy);
+    const m = Math.hypot(dx, dy);
+    if (m < 8) { this.joy.vx = this.joy.vy = 0; return; }
+    this.joy.vx = dx / max; this.joy.vy = dy / max;
+  }
+  flashBtn(g) { g.setScale(1); this.tweens.add({ targets: g, scale: 0.86, duration: 60, yoyo: true }); }
+
+  readMove() {
+    let x = 0, y = 0;
+    if (INPUT.keys.has('left')) x -= 1;
+    if (INPUT.keys.has('right')) x += 1;
+    if (INPUT.keys.has('up')) y -= 1;
+    if (INPUT.keys.has('down')) y += 1;
+    if (x || y) { const l = Math.hypot(x, y); return { x: x / l, y: y / l, m: 1 }; }
+    if (this.joy.vx || this.joy.vy) {
+      const l = Math.hypot(this.joy.vx, this.joy.vy);
+      return { x: this.joy.vx / l, y: this.joy.vy / l, m: Math.min(1, l * 1.4) };
+    }
+    return { x: 0, y: 0, m: 0 };
+  }
+
+  /* ---------------- collision ---------------- */
+  tileAt(wx, wy) {
+    const sx = Math.floor(wx / VIEW_W), sy = Math.floor(wy / VIEW_H);
+    const s = this.world[sx + ',' + sy];
+    if (!s) return '#';
+    const c = Math.floor((wx - sx * VIEW_W) / TILE), r = Math.floor((wy - sy * VIEW_H) / TILE);
+    return s.map[r][c];
+  }
+
+  blocked(e) {
+    const L = e.x - e.hw, R = e.x + e.hw - 0.01, T = e.y - e.hh, B = e.y + e.hh - 0.01;
+    if (e.bounds && (L < e.bounds.L || R > e.bounds.R || T < e.bounds.T || B > e.bounds.B)) return true;
+    if (!e.flying) {
+      for (const [px, py] of [[L, T], [R, T], [L, B], [R, B]]) if (SOLID.has(this.tileAt(px, py))) return true;
+    }
+    for (const s of this.solids) {
+      if (Math.abs(e.x - s.x) < e.hw + s.hw && Math.abs(e.y - s.y) < e.hh + s.hh) return true;
+    }
+    return false;
+  }
+
+  move(e, dx, dy) {
+    let ok = true;
+    if (dx) { e.x += dx; if (this.blocked(e)) { e.x -= dx; ok = false; } }
+    if (dy) { e.y += dy; if (this.blocked(e)) { e.y -= dy; ok = false; } }
+    return ok;
+  }
+
+  // player movement with corner sliding: if a move is blocked, nudge sideways around tile corners
+  movePlayer(dx, dy) {
+    const p = this.player;
+    const okX = !dx || this.move(p, dx, 0);
+    const okY = !dy || this.move(p, 0, dy);
+    const slide = (axis, amount) => {
+      for (let k = 1; k <= 8; k++) {
+        for (const s of [1, -1]) {
+          const o = { ...p, flying: false, bounds: null };
+          o[axis === 'x' ? 'y' : 'x'] += s * k;
+          o[axis] += amount;
+          if (!this.blocked(o)) { this.move(p, axis === 'x' ? 0 : s, axis === 'x' ? s : 0); return; }
+        }
+      }
+    };
+    if (!okX && !dy) slide('x', dx);
+    if (!okY && !dx) slide('y', dy);
+  }
+
+  /* ---------------- main loop ---------------- */
+  update(time, delta) {
+    const dt = Math.min(delta, 50) / 1000;
+    const a = INPUT.a, b = INPUT.b, r = INPUT.r, tap = this.tapped;
+    INPUT.a = INPUT.b = INPUT.r = false;
+    this.tapped = false;
+
+    if (this.state === 'title') {
+      if (a || b || r || tap) { this.titleOverlay.setVisible(false); this.state = 'play'; this.startTime = time; this.showArea(); }
+    } else if (this.state === 'win' || this.state === 'over') {
+      if ((a || b || r || tap) && time > this.overlayReadyAt) this.scene.restart();
+    } else if (this.state === 'dialog') {
+      if (a || b || tap) this.advanceDialog();
+    } else if (this.state === 'play') {
+      if (r) { this.scene.restart(); return; }
+      this.updatePlay(dt, time, a, b);
+    }
+    this.updateVisuals(time);
+  }
+
+  updatePlay(dt, time, a, b) {
+    const p = this.player;
+    if (p.invuln > 0) p.invuln -= dt;
+    if (p.swingCd > 0) p.swingCd -= dt;
+
+    // movement (after a warp, wait until the stick/keys are released so you don't walk straight back out)
+    let mv = this.readMove();
+    if (this.moveLock) { if (mv.m === 0) this.moveLock = false; else mv = { x: 0, y: 0, m: 0 }; }
+    p.moving = false;
+    if (p.knock > 0) {
+      p.knock -= dt;
+      this.move(p, p.kx * dt, p.ky * dt);
+    } else if (p.swing <= 0 && mv.m > 0) {
+      p.dir = Math.abs(mv.x) > Math.abs(mv.y) ? (mv.x < 0 ? 'left' : 'right') : (mv.y < 0 ? 'up' : 'down');
+      this.movePlayer(mv.x * PLAYER_SPEED * mv.m * dt, mv.y * PLAYER_SPEED * mv.m * dt);
+      p.moving = true;
+    }
+
+    // sword
+    if (a && p.swingCd <= 0) {
+      p.swing = SWING_TIME; p.swingCd = SWING_COOLDOWN; this.swingHits = new Set();
+      this.stats.swings++;
+      sfx('swing');
+    }
+    if (p.swing > 0) {
+      p.swing -= dt;
+      this.swordHits();
+      if (this.shotMode && p.swing < SWING_TIME * 0.45) { p.swing = SWING_TIME * 0.4; this.scene.pause(); this.frozenForShot = true; }
+    }
+
+    // talk / open
+    const near = this.nearestInteractable();
+    this.btnBLabel.setText(near ? (near.kind === 'villager' || near.kind === 'sign' ? 'B  TALK' : 'B  OPEN') : 'B  ----');
+    if (b && near) this.interact(near);
+    if (this.state !== 'play') return;
+
+    if (this.checkWarp()) return;
+    this.checkScreenEdge();
+    if (this.state !== 'play') return;
+
+    for (const e of this.enemies) if (!e.dead && e.screen === this.curKey()) this.updateEnemy(e, dt, time);
+    if (this.state !== 'play') return;
+    this.updateShots(dt);
+    this.updatePickups(time);
+  }
+
+  curKey() { return this.cur.sx + ',' + this.cur.sy; }
+
+  /* ---------------- sword ---------------- */
+  // the hitbox is always in front of the hero, in the facing direction
+  swordBox() {
+    const p = this.player, d = DIRS[p.dir];
+    return { x: p.x + d.x * 18, y: p.y - 3 + d.y * 18, hw: d.x ? 13 : 11, hh: d.y ? 13 : 11 };
+  }
+
+  swordHits() {
+    const box = this.swordBox();
+    for (const e of this.enemies) {
+      if (e.dead || e.screen !== this.curKey() || this.swingHits.has(e) || e.hurt > 0) continue;
+      if (Math.abs(e.x - box.x) < e.hw + box.hw && Math.abs(e.y - box.y) < e.hh + box.hh) {
+        this.swingHits.add(e);
+        this.hitEnemy(e);
+      }
+    }
+    // the sword knocks rocks out of the air
+    for (const s of this.shots) {
+      if (!s.dead && Math.abs(s.x - box.x) < box.hw + 4 && Math.abs(s.y - box.y) < box.hh + 4) { this.killShot(s); this.burst(s.x, s.y, 0xbbbbbb); }
+    }
+    // cut bushes
+    for (const [px, py] of [[box.x - 8, box.y - 8], [box.x + 8, box.y - 8], [box.x - 8, box.y + 8], [box.x + 8, box.y + 8]]) {
+      if (this.tileAt(px, py) !== 'B') continue;
+      const sx = Math.floor(px / VIEW_W), sy = Math.floor(py / VIEW_H), s = this.world[sx + ',' + sy];
+      const c = Math.floor((px - sx * VIEW_W) / TILE), r = Math.floor((py - sy * VIEW_H) / TILE);
+      this.setTile(s, c, r, '.');
+      this.stats.bushesCut++;
+      const ctr = tileCenter(s, c, r);
+      this.burst(ctr.x, ctr.y, 0x3fae49);
+      sfx('cut');
+      const roll = Math.random();
+      if (roll < 0.4) this.spawnPickup('rupee', ctr.x, ctr.y, s.key);
+      else if (roll < 0.55) this.spawnPickup('heart', ctr.x, ctr.y, s.key);
+    }
+  }
+
+  hitEnemy(e) {
+    const p = this.player, d = DIRS[p.dir];
+    e.hp -= 1;
+    e.hurt = e.def.boss ? 0.4 : 0.25;
+    e.spr.setTintFill(0xffffff);
+    const kb = e.def.boss ? 0 : 170;   // the Guardian is too heavy to knock back
+    e.knock = 0.14; e.kx = d.x * kb; e.ky = d.y * kb;
+    sfx('hit');
+    if (e.hp <= 0) {
+      e.dead = true;
+      this.stats.kills++;
+      this.burst(e.x, e.y, 0xffffff);
+      this.tweens.add({ targets: e.spr, scale: 0, angle: 180, alpha: 0, duration: e.def.boss ? 700 : 260, onComplete: () => e.spr.destroy() });
+      if (e.def.boss) {
+        sfx('boss');
+        for (let i = 0; i < 4; i++) this.time.delayedCall(i * 120, () => this.burst(e.x + (i - 1.5) * 8, e.y, 0xffd84a));
+        for (const s of this.shots) this.killShot(s);
+        this.toast('The Guardian falls!\nThe chest is unsealed.');
+        return;
+      }
+      const roll = Math.random();
+      if (roll < 0.5) this.spawnPickup('rupee', e.x, e.y, e.screen);
+      else if (roll < 0.75 && p.hp < p.maxHp) this.spawnPickup('heart', e.x, e.y, e.screen);
+    }
+  }
+
+  burst(x, y, color) {
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      const dot = this.w(this.add.rectangle(x, y, 3, 3, color).setDepth(9999));
+      this.tweens.add({ targets: dot, x: x + Math.cos(a) * 14, y: y + Math.sin(a) * 14, alpha: 0, duration: 260, onComplete: () => dot.destroy() });
+    }
+  }
+
+  /* ---------------- enemies ---------------- */
+  updateEnemy(e, dt, time) {
+    const p = this.player;
+    if (e.hurt > 0) { e.hurt -= dt; if (e.hurt <= 0) { e.spr.clearTint(); if (e.def.boss) e.spr.setTint(0xff9a6a); } }
+    const dx = p.x - e.x, dy = p.y - e.y, dist = Math.hypot(dx, dy);
+    if (e.knock > 0) {
+      e.knock -= dt;
+      this.move(e, e.kx * dt, e.ky * dt);
+    } else if (this.freeze) {
+      // test mode: enemies hold still (but still hurt on touch)
+    } else if (e.kind === 'bat') {
+      // bats swoop at the hero when close, drift otherwise
+      e.t -= dt;
+      if (dist < 96 && dist > 1) { e.vx = dx / dist * e.def.speed; e.vy = dy / dist * e.def.speed; }
+      else if (e.t <= 0) {
+        const ang = Math.random() * Math.PI * 2;
+        e.vx = Math.cos(ang) * 20; e.vy = Math.sin(ang) * 20; e.t = 0.8 + Math.random();
+      }
+      if (!this.move(e, e.vx * dt, e.vy * dt)) { e.vx = -e.vx; e.vy = -e.vy; }
+    } else if (e.kind === 'boss') {
+      // the Guardian creeps toward the hero and fires a 3-way spread
+      if (dist > 30) this.move(e, dx / dist * e.def.speed * dt, dy / dist * e.def.speed * dt);
+      e.fire -= dt;
+      if (e.fire <= 0 && dist > 1) {
+        const base = Math.atan2(dy, dx);
+        for (const off of [-0.35, 0, 0.35]) this.spawnShot(e, Math.cos(base + off), Math.sin(base + off), 95);
+        e.fire = 1.7 + Math.random() * 0.6;
+        sfx('shoot');
+      }
+    } else {
+      // slimes hop about, octos wander and spit rocks along rows/columns
+      e.t -= dt;
+      if (e.t <= 0) {
+        const opts = [DIRS.up, DIRS.down, DIRS.left, DIRS.right];
+        e.dir = Math.random() < 0.25 ? { x: 0, y: 0 } : opts[Math.floor(Math.random() * 4)];
+        e.t = 0.6 + Math.random() * 1.3;
+      }
+      const hop = e.kind === 'slime' ? 0.35 + 0.65 * Math.abs(Math.sin(time / 170 + e.phase)) : 1;
+      const sp = e.def.speed * hop;
+      if (!this.move(e, e.dir.x * sp * dt, e.dir.y * sp * dt)) e.t = 0;
+      if (e.def.shoots) {
+        e.fire -= dt;
+        const aligned = Math.abs(dx) < 10 || Math.abs(dy) < 10;
+        if (e.fire <= 0 && aligned && dist < 170 && dist > 20) {
+          const sx = Math.abs(dx) < 10 ? 0 : Math.sign(dx), sy = sx ? 0 : Math.sign(dy);
+          this.spawnShot(e, sx, sy, 120);
+          e.fire = 1.8 + Math.random() * 1.5;
+          sfx('shoot');
+        }
+      }
+    }
+    // touch damage
+    if (p.invuln <= 0 && Math.abs(p.x - e.x) < p.hw + e.hw - 1 && Math.abs(p.y - e.y) < p.hh + e.hh - 1) {
+      this.hurtPlayer(e.def.dmg, e.x, e.y);
+    }
+  }
+
+  spawnShot(e, ux, uy, speed) {
+    const spr = this.w(this.add.circle(e.x, e.y - 3, 4, 0x6b5a4a).setStrokeStyle(1, 0x000000).setDepth(9000));
+    this.shots.push({ x: e.x, y: e.y - 3, vx: ux * speed, vy: uy * speed, spr, screen: e.screen, dead: false, life: 3 });
+  }
+  killShot(s) { s.dead = true; s.spr.destroy(); }
+  updateShots(dt) {
+    const p = this.player;
+    for (const s of this.shots) {
+      if (s.dead) continue;
+      s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
+      s.spr.setPosition(s.x, s.y);
+      const t = this.tileAt(s.x, s.y);
+      if (s.life <= 0 || (SOLID.has(t) && t !== 'W') || Math.floor(s.x / VIEW_W) !== this.cur.sx || Math.floor(s.y / VIEW_H) !== this.cur.sy) { this.killShot(s); continue; }
+      if (p.invuln <= 0 && Math.abs(p.x - s.x) < p.hw + 3 && Math.abs(p.y - s.y) < p.hh + 3) {
+        this.killShot(s);
+        this.hurtPlayer(1, s.x - s.vx, s.y - s.vy);
+        if (this.state !== 'play') return;
+      }
+    }
+    this.shots = this.shots.filter(s => !s.dead);
+  }
+
+  hurtPlayer(dmg, fx, fy) {
+    const p = this.player;
+    p.hp = Math.max(0, p.hp - dmg);
+    p.invuln = 1.0;
+    const dx = p.x - fx, dy = p.y - fy, d = Math.hypot(dx, dy) || 1;
+    p.knock = 0.14; p.kx = dx / d * 150; p.ky = dy / d * 150;
+    p.swing = 0;
+    sfx('hurt');
+    this.cameras.main.shake(120, 0.012);
+    this.updateHUD();
+    if (p.hp <= 0) {
+      this.state = 'over';
+      this.stats.deaths++;
+      this.time.delayedCall(500, () => this.showOverlay(this.overOverlay));
+      this.overlayReadyAt = this.time.now + 1100;
+    }
+  }
+
+  /* ---------------- pickups ---------------- */
+  updatePickups(time) {
+    const p = this.player;
+    for (const k of this.pickups) {
+      if (k.taken || k.screen !== this.curKey()) continue;
+      if (Math.hypot(p.x - k.x, p.y - 4 - k.y) < 15) {
+        k.taken = true;
+        if (k.kind === 'rupee') { this.rupees += 1; sfx('coin'); }
+        else { p.hp = Math.min(p.maxHp, p.hp + 2); sfx('coin'); }
+        this.tweens.add({ targets: k.spr, y: k.spr.y - 16, alpha: 0, duration: 250, onComplete: () => k.spr.destroy() });
+        this.updateHUD();
+      }
+    }
+  }
+
+  /* ---------------- talking and opening ---------------- */
+  nearestInteractable() {
+    const p = this.player, d = DIRS[p.dir];
+    const fx = p.x + d.x * 8, fy = p.y + d.y * 8;
+    let best = null, bestD = 34;
+    for (const it of this.interactables) {
+      if (it.screen !== this.curKey()) continue;
+      const dist = Math.hypot(it.x - fx, it.y - fy);
+      if (dist < bestD) { best = it; bestD = dist; }
+    }
+    return best;
+  }
+
+  bossAlive() { return this.enemies.some(e => e.def.boss && !e.dead); }
+
+  interact(it) {
+    this.stats.interacts++;
+    if (it.kind === 'villager') {
+      this.say(this.hasKey
+        ? ['Is that the OLD KEY?!', 'The cave door is in the Rocky Hills, south of the forest. Be careful in there!']
+        : ['Ah, a traveler! A Guardian guards the Sunstone deep in Echo Cave.',
+           'The cave door in the Rocky Hills is locked. The key lies in a chest in the Whispering Forest, east of here.',
+           'Press A to swing your sword. Cut bushes for rupees and hearts!']);
+    } else if (it.kind === 'sign') {
+      this.say('East:  Whispering Forest\nSouth: Sunny Meadow\nSouth-east: Rocky Hills');
+    } else if (it.kind === 'door') {
+      this.say("It's the villager's house.\nBetter not barge in.");
+    } else if (it.kind === 'chest') {
+      if (it.open) { this.say('The chest is empty.'); return; }
+      it.open = true;
+      it.spr.setTexture('chest_open');
+      this.hasKey = true;
+      this.updateHUD();
+      sfx('open');
+      this.burst(it.x, it.y - 6, 0xffd84a);
+      this.say(['You found the OLD KEY!', 'It must open the cave door in the Rocky Hills.']);
+    } else if (it.kind === 'cavedoor') {
+      if (it.open) return;
+      if (!this.hasKey) { this.say('A heavy door, locked tight.\nMaybe the villager knows where the key is.'); return; }
+      it.open = true;
+      this.setTile(this.world[it.screen], it.c, it.r, 'O');
+      this.hasKey = false;
+      this.updateHUD();
+      sfx('open');
+      this.say('The OLD KEY turns...\nThe cave door swings open!');
+    } else if (it.kind === 'treasure') {
+      if (this.bossAlive()) { this.say('The chest is sealed by a dark power.\nDefeat the Guardian!'); return; }
+      if (it.open) return;
+      it.open = true;
+      it.spr.setTexture('chest_open');
+      sfx('open');
+      this.burst(it.x, it.y - 6, 0xffd84a);
+      this.state = 'win';
+      const secs = Math.round((this.time.now - this.startTime) / 1000);
+      this.winOverlay.sub.setText(`You found the SUNSTONE!\n\nRupees: ${this.rupees}\nTime: ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}\n\nTap to play again`);
+      this.time.delayedCall(700, () => this.showOverlay(this.winOverlay));
+      this.overlayReadyAt = this.time.now + 1300;
+    }
+  }
+
+  say(pages) {
+    this.dialog = { pages: Array.isArray(pages) ? pages : [pages], i: 0 };
+    this.state = 'dialog';
+    this.joy.vx = this.joy.vy = 0;
+    this.dialogBox.setVisible(true);
+    this.showPage();
+  }
+  showPage() {
+    const d = this.dialog;
+    this.dialogText.setText(d.pages[d.i]);
+    this.dialogMore.setText(d.i < d.pages.length - 1 ? '▼' : '■');
+    sfx('talk');
+  }
+  advanceDialog() {
+    const d = this.dialog;
+    d.i++;
+    if (d.i >= d.pages.length) { this.dialogBox.setVisible(false); this.state = 'play'; }
+    else this.showPage();
+  }
+
+  toast(msg) {
+    this.areaText.setText(msg).setAlpha(1);
+    this.tweens.killTweensOf(this.areaText);
+    this.tweens.add({ targets: this.areaText, alpha: 0, delay: 1800, duration: 600 });
+  }
+
+  /* ---------------- screen transitions ---------------- */
+  checkWarp() {
+    const p = this.player, s = this.world[this.curKey()];
+    const c = Math.floor((p.x - s.sx * VIEW_W) / TILE), r = Math.floor((p.y - s.sy * VIEW_H) / TILE);
+    const wp = WARPS[`${s.key}:${c},${r}`];
+    if (!wp || s.map[r][c] !== 'O') return false;
+    this.state = 'scroll';
+    this.stats.warps++;
+    for (const sh of this.shots) this.killShot(sh);
+    this.shots = [];
+    const cam = this.cameras.main;
+    cam.fadeOut(180, 0, 0, 0);
+    cam.once('camerafadeoutcomplete', () => {
+      this.placePlayer(this.world[wp.screen], wp.c, wp.r, wp.dir);
+      this.moveLock = true;
+      cam.fadeIn(220, 0, 0, 0);
+      this.state = 'play';
+      this.showArea();
+    });
+    return true;
+  }
+
+  checkScreenEdge() {
+    const p = this.player;
+    const L = this.cur.sx * VIEW_W, T = this.cur.sy * VIEW_H;
+    let nx = this.cur.sx, ny = this.cur.sy;
+    if (p.x < L) nx--; else if (p.x >= L + VIEW_W) nx++;
+    else if (p.y < T) ny--; else if (p.y >= T + VIEW_H) ny++;
+    if (nx === this.cur.sx && ny === this.cur.sy) return;
+    if (!this.world[nx + ',' + ny]) { p.x = Phaser.Math.Clamp(p.x, L + p.hw, L + VIEW_W - p.hw); p.y = Phaser.Math.Clamp(p.y, T + p.hh, T + VIEW_H - p.hh); return; }
+
+    this.state = 'scroll';
+    for (const sh of this.shots) this.killShot(sh);
+    this.shots = [];
+    this.cur = { sx: nx, sy: ny };
+    const dx = Math.sign(nx - (L / VIEW_W)), dy = Math.sign(ny - (T / VIEW_H));
+    this.tweens.add({ targets: this.cameras.main, scrollX: nx * VIEW_W, scrollY: ny * VIEW_H, duration: 450, ease: 'Sine.easeInOut' });
+    this.tweens.add({
+      targets: p, x: p.x + dx * 14, y: p.y + dy * 14, duration: 450,
+      onComplete: () => { this.state = 'play'; this.showArea(); }
+    });
+  }
+
+  showArea() { this.toast(this.world[this.curKey()].name); }
+
+  /* ---------------- drawing ---------------- */
+  heroFrame(time) {
+    const p = this.player, dir = p.dir;
+    if (this.use64) {
+      // 64x64 frames, one consistent scale, feet anchored: no per-frame compensation needed.
+      let f = 'hero';
+      if (p.swing > 0) f = (1 - p.swing / SWING_TIME) < 0.3 ? 'hero_windup' : 'hero_strike';
+      else if (p.moving && Math.floor(time / 140) % 2 === 0) f = 'hero_walk';
+      return { tex: `f_${f}_${dir}`, ox: 0, oy: 0, scale: 1, sword: false, noBob: true, f64: true };
+    }
+    // sword swing: real attack sprites when present, else the old rotated-sword look
+    if (p.swing > 0) {
+      const t = 1 - p.swing / SWING_TIME;
+      if (this.has('hero_attack_' + dir)) {
+        // ~60ms wind-up, then the thrust. Attack frames are trimmed to 32x32 (body ~75-80%),
+        // so draw them larger and shift them forward so the body stays where the idle hero was.
+        if (t < 0.25 && this.has('hero_windup_' + dir)) return { tex: 'hero_windup_' + dir, ox: 0, oy: 0, scale: 0.95, sword: false };
+        const side = dir === 'left' || dir === 'right';
+        const shift = side ? 8 : 5;
+        return { tex: 'hero_attack_' + dir, ox: DIRS[dir].x * shift, oy: DIRS[dir].y * shift, scale: side ? 1.3 : 1.2, sword: false };
+      }
+      if (dir === 'down' && this.has('hero_attack')) return { tex: 'hero_attack', ox: 0, oy: 0, scale: HERO_SCALE, sword: false };
+      return { tex: 'hero_' + dir, ox: 0, oy: 0, scale: HERO_SCALE, sword: true };
+    }
+    if (p.moving && this.has('hero_walk2_' + dir)) {
+      return { tex: Math.floor(time / 150) % 2 ? 'hero_walk2_' + dir : 'hero_' + dir, ox: 0, oy: 0, scale: HERO_SCALE, sword: false, noBob: true };
+    }
+    return { tex: 'hero_' + dir, ox: 0, oy: 0, scale: HERO_SCALE, sword: false };
+  }
+
+  updateVisuals(time) {
+    const p = this.player;
+    const f = this.heroFrame(time);
+    const bob = p.moving && !f.noBob ? Math.abs(Math.sin(time / 70)) * -1.5 : 0;
+    if (f.f64) p.spr.setTexture(f.tex).setScale(1).setOrigin(0.5, 57 / 64).setPosition(p.x, p.y + 7).setDepth(p.y);
+    else p.spr.setTexture(f.tex).setScale(f.scale).setOrigin(0.5).setPosition(p.x + f.ox, p.y - 7 + bob + f.oy).setDepth(p.y);
+    p.spr.setAlpha(p.invuln > 0 && Math.floor(time / 60) % 2 === 0 ? 0.35 : 1);
+
+    if (f.sword) {
+      const t = 1 - p.swing / SWING_TIME;
+      const hand = { up: [4, -14], down: [-4, -2], left: [-6, -6], right: [6, -6] }[p.dir];
+      p.sword.setVisible(true)
+        .setPosition(p.x + hand[0], p.y + hand[1])
+        .setAngle(SWORD_ANGLE[p.dir] - 55 + 110 * t)
+        .setDepth(p.dir === 'up' ? p.y - 1 : p.y + 1);
+    } else {
+      p.sword.setVisible(false);
+    }
+    // slash arc during the strike part of the swing
+    const st = p.swing > 0 ? 1 - p.swing / SWING_TIME : -1;
+    if (st >= 0.3) {
+      p.slash.setVisible(true).setPosition(p.x, p.y - 3)
+        .setAngle({ right: 0, down: 90, left: 180, up: -90 }[p.dir])
+        .setAlpha(1 - (st - 0.3) / 0.9).setDepth(p.y + 2);
+    } else p.slash.setVisible(false);
+
+    for (const e of this.enemies) {
+      if (e.dead) continue;
+      const fly = e.kind === 'bat' ? Math.sin(time / 110 + e.phase) * 3 - 6 : 0;
+      const squash = e.kind === 'slime' ? 1 + Math.sin(time / 85 + e.phase) * 0.06 : e.def.boss ? 1 + Math.sin(time / 200) * 0.04 : 1;
+      e.spr.setPosition(e.x, e.y - 4 + fly).setDepth(e.y).setScale(e.def.scale * squash, e.def.scale / squash);
+      if (e.kind === 'bat' && e.vx) e.spr.setFlipX(e.vx < 0);
+    }
+    for (const k of this.pickups) if (!k.taken) k.spr.y = k.y - 4 + Math.sin(time / 250 + k.t) * 2;
+
+    const boss = this.enemies.find(e => e.def.boss);
+    const showBoss = boss && !boss.dead && boss.screen === this.curKey() && (this.state === 'play' || this.state === 'dialog');
+    this.bossBar.setVisible(!!showBoss);
+    if (showBoss) this.bossFill.width = 118 * Math.max(0, boss.hp) / boss.def.hp;
+  }
+
+  updateHUD() {
+    const hp = this.player.hp;
+    this.heartImgs.forEach((img, i) => {
+      const v = hp - i * 2;
+      img.setTexture(v >= 2 ? 'heart' : v === 1 ? 'heart_half' : 'heart_empty');
+    });
+    this.rupeeText.setText(String(this.rupees).padStart(3, '0'));
+    this.keyIcon.setAlpha(this.hasKey ? 1 : 0.2);
+  }
+}
+
+const game = new Phaser.Game({
+  type: Phaser.AUTO,
+  parent: 'game',
+  backgroundColor: '#000000',
+  pixelArt: true,
+  roundPixels: true,
+  input: { keyboard: false, activePointers: 4, touch: { capture: true } },
+  scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, width: GAME_W, height: GAME_H },
+  scene: [Boot, Play]
+});
+
+/* ---------- resize / orientation: re-fit the pad to the new phone shape ---------- */
+let resizeTimer = null;
+function onResize() {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    const s = window.SCENE;
+    if (s && s.sys && s.sys.isActive() !== undefined) s.resizeTo(wantedHeight());
+    game.scale.refresh();
+  }, 120);
+}
+window.addEventListener('resize', onResize);
+window.addEventListener('orientationchange', onResize);
+document.addEventListener('visibilitychange', () => { INPUT.keys.clear(); if (window.SCENE && window.SCENE.joyHome) window.SCENE.releaseJoy(); });
+
+/* ---------- read-only debug hook for automated tests ---------- */
+window.__game = Object.freeze({
+  get state() {
+    const S = window.SCENE;
+    if (!S || !S.player) return { ready: false };
+    const p = S.player;
+    const canvas = game.canvas, r = canvas.getBoundingClientRect();
+    const kx = r.width / GAME_W, ky = r.height / GAME_H;
+    const toClient = (x, y) => ({ x: r.left + x * kx, y: r.top + y * ky });
+    const enemies = S.enemies.filter(e => e.screen === S.curKey());
+    return {
+      ready: true,
+      state: S.state,
+      paused: !!S.frozenForShot,
+      screen: S.curKey(),
+      area: S.world[S.curKey()].name,
+      player: { x: p.x, y: p.y, dir: p.dir, hp: p.hp, maxHp: p.maxHp, swinging: p.swing > 0, texture: p.spr.texture.key, swordVisible: p.sword.visible },
+      swordBox: p.swing > 0 ? S.swordBox() : null,
+      rupees: S.rupees, hasKey: S.hasKey,
+      stats: { ...S.stats },
+      enemies: enemies.map(e => ({ kind: e.kind, x: Math.round(e.x), y: Math.round(e.y), hp: e.hp, dead: e.dead })),
+      bossAlive: S.bossAlive(),
+      joystick: { active: S.joy.id !== null, vx: S.joy.vx, vy: S.joy.vy },
+      dialog: S.state === 'dialog' ? S.dialogText.text : null,
+      bLabel: S.btnBLabel.text,
+      tiles: S.world[S.curKey()].map.map(row => row.join('')),
+      textures: { required: SPRITES.filter(n => S.textures.exists(n)), missingRequired: SPRITES.filter(n => !S.textures.exists(n)),
+                  optionalLoaded: OPTIONAL.filter(n => S.has(n)), optionalMissing: OPTIONAL.filter(n => !S.has(n)),
+                  hero64Missing: HERO64.filter(n => !S.has(n)), using64: S.use64 },
+      game: { w: GAME_W, h: GAME_H, padY: PAD_Y },
+      canvasRect: { left: r.left, top: r.top, width: r.width, height: r.height },
+      controls: {
+        joystick: { ...toClient(S.joyHome.x, S.joyHome.y), r: S.JOY_R * kx },
+        a: { ...toClient(S.btnA.x, S.btnA.y), r: S.btnA.r * kx },
+        b: { ...toClient(S.btnB.x, S.btnB.y), r: S.btnB.r * kx },
+        mapRect: { ...toClient(0, HUD_H), w: VIEW_W * kx, h: VIEW_H * ky },
+        padTop: toClient(0, PAD_Y).y
+      }
+    };
+  }
+});
+</script>
+</body>
+</html>
