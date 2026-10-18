@@ -93,6 +93,7 @@ ul.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction
   <input class="search" id="q" type="search" placeholder="Find a recipe" aria-label="Find a recipe" autocomplete="off">
 
   <nav class="jump" aria-label="Jump to a section">
+    <a href="#breakfast">Breakfast</a>
     <a href="#dinners">Dinners</a>
     <a href="#sides">Sides &amp; breads</a>
     <a href="#sweets">Sweets</a>
@@ -100,6 +101,18 @@ ul.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction
   </nav>
 
   <!-- One <section class="group"> per category; one <li> per recipe, sorted A to Z within its group. See CLAUDE.md. -->
+  <section class="group" id="breakfast">
+    <h2>Breakfast</h2>
+    <ul class="list">
+      <li><a class="card has-thumb" href="recipes/apple-pie-overnight-oats.html" style="--c:#7d4f2a; --c-dark:#e3b382">
+        <img class="thumb" src="recipes/img/apple-pie-overnight-oats-thumb.webp" width="72" height="72" alt="" loading="lazy">
+        <span class="name">Apple Pie Overnight Oats</span>
+        <span class="blurb">Oats, skyr, grated apple and cinnamon. Stir tonight, eat tomorrow.</span>
+        <span class="facts"><span>5 min + overnight</span><span>serves 1</span></span>
+      </a></li>
+    </ul>
+  </section>
+
   <section class="group" id="dinners">
     <h2>Dinners</h2>
     <ul class="list">

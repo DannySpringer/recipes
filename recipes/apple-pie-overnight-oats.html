@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Oats, skyr, grated apple, maple and cinnamon, stirred in a jar and left in the fridge overnight.">
+<title>Apple Pie Overnight Oats</title>
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: one narrow column of big tap targets, sticky progress bar on top, a step at a time feel without hiding anything */
+:root {
+  --bg: #f8f4ee;
+  --surface: #ffffff;
+  --fg: #2a2119;
+  --muted: #6b5e52;
+  --line: #e6dccf;
+  --accent: #7d4f2a;      /* cinnamon stick */
+  --accent-soft: #f3e6d8;
+  --on-accent: #ffffff;
+  --done: #a99c8f;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161310; --surface: #201b16; --fg: #eee7df; --muted: #ad9f91;
+    --line: #362e26; --accent: #e3b382; --accent-soft: #3a2a1d; --on-accent: #1c1209; --done: #6e6358;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161310; --surface: #201b16; --fg: #eee7df; --muted: #ad9f91;
+  --line: #362e26; --accent: #e3b382; --accent-soft: #3a2a1d; --on-accent: #1c1209; --done: #6e6358;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--body); font-size: 1.125rem; line-height: 1.5;
+  padding-inline: 16px; padding-block: 0 48px;
+}
+.wrap { max-width: 34rem; margin: 0 auto; display: flex; flex-direction: column; gap: 1.25rem; }
+
+.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bg); padding-block: 12px 10px; margin-inline: -16px; padding-inline: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.top-row { max-width: 34rem; margin: 0 auto; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+h1 { font-family: var(--display); font-weight: 800; font-size: 1.75rem; line-height: 1.1; margin: 0; letter-spacing: -0.01em; }
+.meta { color: var(--muted); font-size: 0.95rem; white-space: nowrap; }
+.bar { max-width: 34rem; margin: 10px auto 0; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s; }
+
+.tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font: inherit; font-size: 0.95rem; color: var(--fg); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+
+section { display: flex; flex-direction: column; gap: 0.5rem; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0; text-wrap: balance; }
+h2 .n { color: var(--accent); margin-right: .35em; }
+.opt { color: var(--muted); font-weight: 400; font-size: 1rem; }
+p { margin: 0; }
+.note { color: var(--muted); }
+
+ul.checks { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+ul.checks li + li { border-top: 1px solid var(--line); }
+ul.checks label { display: flex; align-items: center; gap: 14px; padding: 14px 16px; cursor: pointer; min-height: 56px; }
+ul.checks input { appearance: none; flex: none; width: 28px; height: 28px; border: 2px solid var(--muted); border-radius: 8px; display: grid; place-content: center; margin: 0; cursor: pointer; }
+ul.checks input:checked { background: var(--accent); border-color: var(--accent); }
+ul.checks input:checked::after { content: ""; width: 8px; height: 14px; border: solid var(--on-accent); border-width: 0 3px 3px 0; transform: translateY(-2px) rotate(45deg); }
+ul.checks input:focus-visible, .chip:focus-visible, .step-btn:focus-visible, .big:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+ul.checks input:checked + span { color: var(--done); text-decoration: line-through; }
+.amt { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.step-btn {
+  font: inherit; display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 14px;
+  padding: 14px 16px; cursor: pointer; min-height: 56px;
+}
+.step-btn .box { flex: none; width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--muted); display: grid; place-content: center; }
+.step-btn[aria-pressed="true"] .box { background: var(--accent); border-color: var(--accent); }
+.step-btn[aria-pressed="true"] .box::after { content: ""; width: 7px; height: 13px; border: solid var(--on-accent); border-width: 0 3px 3px 0; transform: translateY(-2px) rotate(45deg); }
+.step-btn[aria-pressed="true"] .lbl { color: var(--done); }
+
+.milestone { background: var(--accent-soft); border-radius: 14px; padding: 12px 16px; font-weight: 700; }
+.hero { display: block; width: 100%; height: auto; aspect-ratio: 1024 / 572; object-fit: cover; border-radius: 14px; margin-top: 1rem; background: var(--line); }
+.milestone[hidden] { display: none !important; }
+
+.timer { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.clock { font-family: var(--display); font-weight: 800; font-size: 3rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.clock.ring { color: var(--accent); animation: pulse 1s infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .clock.ring { animation: none; } .bar > i { transition: none; } }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.big { font: inherit; font-weight: 700; border: 0; border-radius: 12px; padding: 12px 20px; cursor: pointer; background: var(--accent); color: var(--on-accent); min-height: 48px; }
+.big.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); }
+
+footer { border-top: 1px solid var(--line); padding-top: 1rem; display: flex; flex-direction: column; gap: .75rem; }
+.back { display: inline-flex; align-items: center; min-height: 32px; margin-bottom: 4px; color: var(--muted); font-size: .95rem; text-decoration: none; }
+.back:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-row"><a class="back" href="../index.html">&larr; All recipes</a></div>
+  <div class="top-row">
+    <h1>Apple Pie Overnight Oats</h1>
+    <span class="meta" id="meta">5 min + overnight · serves 1</span>
+  </div>
+  <div class="bar" aria-hidden="true"><i id="bar"></i></div>
+</header>
+
+<main class="wrap">
+  <img class="hero" src="img/apple-pie-overnight-oats.webp" width="1024" height="572" alt="Glass jar of oats with chia seeds, topped with diced apple and chopped walnuts, next to a bowl of sliced apples and cinnamon sticks">
+
+  <div class="tools">
+    <button class="chip" id="wake" aria-pressed="false" type="button">Keep screen on</button>
+    <button class="chip" id="reset" type="button">Start over</button>
+  </div>
+
+  <section>
+    <h2><span class="n">0</span>Get everything out first</h2>
+    <p class="note">Do this the night before. It only takes a few minutes.</p>
+    <ul class="checks" data-group="prep">
+      <li><label><input type="checkbox" id="p1"><span>Rolled oats</span></label></li>
+      <li><label><input type="checkbox" id="p2"><span>Milk</span></label></li>
+      <li><label><input type="checkbox" id="p3"><span>Vanilla skyr (siggi's 4%)</span></label></li>
+      <li><label><input type="checkbox" id="p4"><span>1 apple</span></label></li>
+      <li><label><input type="checkbox" id="p5"><span>Maple syrup</span></label></li>
+      <li><label><input type="checkbox" id="p6"><span>Cinnamon</span></label></li>
+      <li><label><input type="checkbox" id="p7"><span>Chia seeds</span></label></li>
+      <li><label><input type="checkbox" id="p8"><span>Toasted walnuts, roughly chopped (for the morning)</span></label></li>
+      <li><label><input type="checkbox" id="p9"><span>Jar with a lid (or a bowl), box grater, measuring cups and spoons</span></label></li>
+    </ul>
+    <div class="milestone" id="ms-prep" hidden>All out? This one's quick from here.</div>
+  </section>
+
+  <section>
+    <h2><span class="n">1</span>Grate the apple</h2>
+    <p>Use the big holes on the grater. Stop when you have about <span class="amt">¼ cup</span>. No need to peel it.</p>
+    <button class="step-btn" id="s1" aria-pressed="false" type="button"><span class="box"></span><span class="lbl">Grated</span></button>
+  </section>
+
+  <section>
+    <h2><span class="n">2</span>Put it all in the jar</h2>
+    <p class="note">Check each one off as it goes in.</p>
+    <ul class="checks" data-group="jar">
+      <li><label><input type="checkbox" id="j1"><span><span class="amt">½ cup</span> rolled oats</span></label></li>
+      <li><label><input type="checkbox" id="j2"><span><span class="amt">¼ cup</span> milk</span></label></li>
+      <li><label><input type="checkbox" id="j3"><span><span class="amt">¼ cup</span> vanilla skyr</span></label></li>
+      <li><label><input type="checkbox" id="j4"><span><span class="amt">¼ cup</span> grated apple</span></label></li>
+      <li><label><input type="checkbox" id="j5"><span><span class="amt">½ tbsp</span> maple syrup</span></label></li>
+      <li><label><input type="checkbox" id="j6"><span><span class="amt">¼ tsp</span> cinnamon</span></label></li>
+      <li><label><input type="checkbox" id="j7"><span><span class="amt">1 tsp</span> chia seeds</span></label></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="n">3</span>Stir</h2>
+    <p>Stir until there are no dry oats left and the skyr is mixed in.</p>
+    <button class="step-btn" id="s3" aria-pressed="false" type="button"><span class="box"></span><span class="lbl">Stirred</span></button>
+  </section>
+
+  <section>
+    <h2><span class="n">4</span>Into the fridge overnight</h2>
+    <p>Put the lid on and leave it in the fridge until morning. In the morning the oats are soft and it's thick like pudding.</p>
+    <p class="note">No timer needed. Your ticks here are saved, so you can close the page and pick up in the morning.</p>
+    <button class="step-btn" id="s4" aria-pressed="false" type="button"><span class="box"></span><span class="lbl">In the fridge</span></button>
+  </section>
+
+  <section>
+    <h2><span class="n">5</span>Top it in the morning</h2>
+    <p class="note">Give it a stir first.</p>
+    <ul class="checks" data-group="top">
+      <li><label><input type="checkbox" id="t1"><span>A handful of toasted walnuts</span></label></li>
+      <li><label><input type="checkbox" id="t2" data-optional><span>A little more maple syrup <span class="opt">(optional)</span></span></label></li>
+    </ul>
+    <div class="milestone" id="ms-done" hidden>Breakfast is ready. 🎉</div>
+  </section>
+
+  <footer>
+    <p><strong>Eat it</strong> cold, straight from the jar. Make a few jars at once for the week if you like.</p>
+    <p class="note">Adapted from a siggi's recipe.</p>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var KEY = "apple-pie-overnight-oats-v1";
+  var META = "5 min + overnight · serves 1";
+  var state = {};
+  try { state = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { state = {}; }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  var boxes = Array.prototype.slice.call(document.querySelectorAll("ul.checks input"));
+  var steps = ["s1", "s3", "s4"].map(function (id) { return document.getElementById(id); });
+
+  boxes.forEach(function (b) {
+    b.checked = !!state[b.id];
+    b.addEventListener("change", function () { state[b.id] = b.checked; save(); update(); });
+  });
+  steps.forEach(function (s) {
+    s.setAttribute("aria-pressed", state[s.id] ? "true" : "false");
+    s.addEventListener("click", function () {
+      state[s.id] = !state[s.id];
+      s.setAttribute("aria-pressed", state[s.id] ? "true" : "false");
+      save(); update();
+    });
+  });
+
+  function update() {
+    var counted = boxes.filter(function (b) { return !b.hasAttribute("data-optional"); });
+    var total = counted.length + steps.length, done = 0;
+    counted.forEach(function (b) { if (b.checked) done++; });
+    steps.forEach(function (s) { if (state[s.id]) done++; });
+    document.getElementById("bar").style.width = (done / total * 100) + "%";
+    document.getElementById("meta").textContent = done === 0 ? META : done + " of " + total + " done";
+    var prep = document.querySelectorAll('[data-group="prep"] input');
+    document.getElementById("ms-prep").hidden = !Array.prototype.every.call(prep, function (b) { return b.checked; });
+    document.getElementById("ms-done").hidden = !state.t1;
+  }
+  update();
+
+  document.getElementById("reset").addEventListener("click", function () {
+    state = {}; save();
+    boxes.forEach(function (b) { b.checked = false; });
+    steps.forEach(function (s) { s.setAttribute("aria-pressed", "false"); });
+    update(); window.scrollTo({ top: 0 });
+  });
+
+  // Keep screen on
+  var lock = null, wakeBtn = document.getElementById("wake");
+  function setWake(on) {
+    if (!on) { if (lock) { lock.release().catch(function(){}); lock = null; } wakeBtn.setAttribute("aria-pressed", "false"); wakeBtn.textContent = "Keep screen on"; return; }
+    if (!("wakeLock" in navigator)) { wakeBtn.textContent = "Screen lock not supported here"; return; }
+    navigator.wakeLock.request("screen").then(function (l) {
+      lock = l; wakeBtn.setAttribute("aria-pressed", "true"); wakeBtn.textContent = "Screen stays on ✓";
+      l.addEventListener("release", function () { if (lock === l) { lock = null; wakeBtn.setAttribute("aria-pressed", "false"); wakeBtn.textContent = "Keep screen on"; } });
+    }).catch(function () { wakeBtn.textContent = "Couldn't keep screen on"; });
+  }
+  wakeBtn.addEventListener("click", function () { setWake(!lock); });
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible" && wakeBtn.getAttribute("aria-pressed") === "true" && !lock) setWake(true);
+  });
+})();
+</script>
+</body>
+</html>
