@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Creamy curried butternut squash soup with coconut milk, ready in 30 minutes.">
+<title>Curried Butternut Squash Soup</title>
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: same template as the other recipe pages; recolored butternut squash */
+:root {
+  --bg: #f6f4ee;
+  --surface: #ffffff;
+  --fg: #22201c;
+  --muted: #645f57;
+  --line: #e2ded4;
+  --done: #a39d94;
+  --accent: #9a5800;
+  --accent-soft: #fbe8c8;
+  --on-accent: #ffffff;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #151412; --surface: #1f1d1a; --fg: #ece9e3; --muted: #a9a49b; --line: #34312c; --done: #6c675f; --accent: #f5b54a; --accent-soft: #382912; --on-accent: #1f1302;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #151412; --surface: #1f1d1a; --fg: #ece9e3; --muted: #a9a49b; --line: #34312c; --done: #6c675f; --accent: #f5b54a; --accent-soft: #382912; --on-accent: #1f1302;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--body); font-size: 1.125rem; line-height: 1.5;
+  padding-inline: 16px; padding-block: 0 48px;
+}
+.wrap { max-width: 34rem; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; }
+
+.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bg); padding-block: 12px 10px; margin-inline: -16px; padding-inline: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.top-row { max-width: 34rem; margin: 0 auto; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+h1 { font-family: var(--display); font-weight: 800; font-size: 1.6rem; line-height: 1.1; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+.meta { color: var(--muted); font-size: 0.95rem; white-space: nowrap; }
+.bar { max-width: 34rem; margin: 10px auto 0; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s; }
+
+.tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font: inherit; font-size: 0.95rem; color: var(--fg); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.chip:disabled { opacity: .5; cursor: default; }
+
+section { display: flex; flex-direction: column; gap: 0.6rem; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; margin: 0; text-wrap: balance; }
+h2 .n { color: var(--accent); margin-right: .35em; }
+.opt { color: var(--muted); font-weight: 400; font-size: 1rem; }
+p { margin: 0; }
+.note { color: var(--muted); }
+.sub { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; margin-top: .25rem; }
+
+ul.checks { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+ul.checks li + li { border-top: 1px solid var(--line); }
+ul.checks label { display: flex; align-items: center; gap: 14px; padding: 14px 16px; cursor: pointer; min-height: 56px; }
+ul.checks input { appearance: none; flex: none; width: 28px; height: 28px; border: 2px solid var(--muted); border-radius: 8px; display: grid; place-content: center; margin: 0; cursor: pointer; }
+ul.checks input:checked { background: var(--accent); border-color: var(--accent); }
+ul.checks input:checked::after { content: ""; width: 8px; height: 14px; border: solid var(--on-accent); border-width: 0 3px 3px 0; transform: translateY(-2px) rotate(45deg); }
+ul.checks input:focus-visible, .chip:focus-visible, .step-btn:focus-visible, .big:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+ul.checks input:checked + span { color: var(--done); text-decoration: line-through; }
+.amt { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.step-btn {
+  font: inherit; display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 14px;
+  padding: 14px 16px; cursor: pointer; min-height: 56px;
+}
+.step-btn .box { flex: none; width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--muted); display: grid; place-content: center; }
+.step-btn[aria-pressed="true"] .box { background: var(--accent); border-color: var(--accent); }
+.step-btn[aria-pressed="true"] .box::after { content: ""; width: 7px; height: 13px; border: solid var(--on-accent); border-width: 0 3px 3px 0; transform: translateY(-2px) rotate(45deg); }
+.step-btn[aria-pressed="true"] .lbl { color: var(--done); }
+
+.hero { display: block; width: 100%; height: auto; aspect-ratio: 682 / 520; object-fit: cover; border-radius: 14px; margin-top: 1rem; background: var(--line); }
+
+.milestone { background: var(--accent-soft); border-radius: 14px; padding: 12px 16px; font-weight: 700; }
+
+.timer { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.clock { font-family: var(--display); font-weight: 800; font-size: 3rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.clock.ring { color: var(--accent); animation: pulse 1s infinite; }
+.ends { color: var(--muted); font-size: .95rem; }
+@keyframes pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .clock.ring { animation: none; } .bar > i { transition: none; } }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.big { font: inherit; font-weight: 700; border: 0; border-radius: 12px; padding: 12px 20px; cursor: pointer; background: var(--accent); color: var(--on-accent); min-height: 48px; }
+.big.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); }
+
+footer { border-top: 1px solid var(--line); padding-top: 1rem; }
+.back { display: inline-flex; align-items: center; min-height: 32px; margin-bottom: 4px; color: var(--muted); font-size: .95rem; text-decoration: none; }
+.back:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-row"><a class="back" href="../index.html">&larr; All recipes</a></div>
+  <div class="top-row">
+    <h1>Curried Butternut Squash Soup</h1>
+    <span class="meta" id="meta">30 min · serves 4</span>
+  </div>
+  <div class="bar" aria-hidden="true"><i id="bar"></i></div>
+</header>
+
+<main class="wrap">
+  <img class="hero" src="img/curried-butternut-squash-soup.webp" width="682" height="520" alt="Bowl of smooth orange butternut squash soup with a swirl of coconut milk, pumpkin seeds and herbs, with crusty bread beside it">
+
+  <div class="tools">
+    <button class="chip" id="wake" aria-pressed="false" type="button">Keep screen on</button>
+    <button class="chip" id="reset" type="button">Start over</button>
+  </div>
+
+  <section>
+    <h2><span class="n">0</span>Get everything out first</h2>
+    <p class="note">One small butternut squash gives about 6 cups once it's peeled and chopped. Chop everything before you start; the cooking goes fast.</p>
+    <ul class="checks">
+      <li><label><input type="checkbox" id="p1"><span><span class="amt">1 tbsp</span> coconut or avocado oil</span></label></li>
+      <li><label><input type="checkbox" id="p2"><span><span class="amt">2</span> medium shallots, finely diced</span></label></li>
+      <li><label><input type="checkbox" id="p3"><span><span class="amt">2</span> cloves garlic, minced</span></label></li>
+      <li><label><input type="checkbox" id="p4"><span><span class="amt">6 cups</span> butternut squash, peeled and chopped</span></label></li>
+      <li><label><input type="checkbox" id="p5"><span><span class="amt">1 pinch</span> each sea salt and black pepper, plus more to taste</span></label></li>
+      <li><label><input type="checkbox" id="p6"><span><span class="amt">1½ tbsp</span> curry powder</span></label></li>
+      <li><label><input type="checkbox" id="p7"><span><span class="amt">¼ tsp</span> ground cinnamon</span></label></li>
+      <li><label><input type="checkbox" id="p8"><span><span class="amt">1</span> can light coconut milk (14 oz)</span></label></li>
+      <li><label><input type="checkbox" id="p9"><span><span class="amt">2 cups</span> vegetable broth</span></label></li>
+      <li><label><input type="checkbox" id="p10"><span><span class="amt">1–3 tbsp</span> maple syrup (or coconut sugar)</span></label></li>
+      <li><label><input type="checkbox" id="p11" data-optional><span><span class="amt">1–2 tsp</span> chili garlic paste, for heat <span class="opt">(optional)</span></span></label></li>
+    </ul>
+    <p class="sub">To serve <span class="opt">(optional)</span></p>
+    <ul class="checks">
+      <li><label><input type="checkbox" id="g1" data-optional><span>Toasted pumpkin seeds</span></label></li>
+      <li><label><input type="checkbox" id="g2" data-optional><span>Chili garlic paste</span></label></li>
+      <li><label><input type="checkbox" id="g3" data-optional><span>Full-fat coconut milk, for a swirl on top</span></label></li>
+    </ul>
+    <p class="sub">Tools</p>
+    <ul class="checks">
+      <li><label><input type="checkbox" id="t1"><span>Large pot with a lid</span></label></li>
+      <li><label><input type="checkbox" id="t2"><span>Immersion blender, or a regular blender</span></label></li>
+    </ul>
+    <div class="milestone" id="ms-prep" hidden>All out. Time to cook.</div>
+  </section>
+
+  <section>
+    <h2><span class="n">1</span>Heat the pot</h2>
+    <p>Put the large pot over medium heat and let it get hot.</p>
+    <button class="step-btn" id="s1" aria-pressed="false" type="button"><span class="box"></span><span class="lbl">Pot is hot</span></button>
+  </section>
+
+  <section>
+    <h2><span class="n">2</span>Sauté shallots and garlic 2 minutes</h2>
+    <p>Add, then stir often for 2 minutes:</p>
+    <ul class="checks">
+      <li><label><input type="checkbox" id="a1"><span>The oil</span></label></li>
+      <li><label><input type="checkbox" id="a2"><span>The shallots and garlic</span></label></li>
+    </ul>
+    <div class="timer" data-id="saute" data-default="2">
+      <div class="clock" aria-live="polite">02:00</div>
+      <div class="ends" hidden></div>
+      <div class="row">
+        <button class="big go" type="button">Start 2-minute timer</button>
+        <button class="big ghost stop" type="button" hidden>Cancel</button>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">3</span>Add the squash and spices</h2>
+    <p>Add these and stir so the squash is coated. Cover and cook 4 minutes, stirring now and then.</p>
+    <ul class="checks">
+      <li><label><input type="checkbox" id="q1"><span>The squash</span></label></li>
+      <li><label><input type="checkbox" id="q2"><span>Salt, pepper, curry powder and cinnamon</span></label></li>
+    </ul>
+    <div class="timer" data-id="squash" data-default="4">
+      <div class="clock" aria-live="polite">04:00</div>
+      <div class="ends" hidden></div>
+      <div class="row">
+        <button class="big go" type="button">Start 4-minute timer</button>
+        <button class="big ghost stop" type="button" hidden>Cancel</button>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">4</span>Pour in the liquids</h2>
+    <ul class="checks">
+      <li><label><input type="checkbox" id="l1"><span>The coconut milk</span></label></li>
+      <li><label><input type="checkbox" id="l2"><span>The broth</span></label></li>
+      <li><label><input type="checkbox" id="l3"><span>Maple syrup. Start with 1 tbsp; you can add more at the end</span></label></li>
+      <li><label><input type="checkbox" id="l4" data-optional><span>Chili garlic paste <span class="opt">(optional)</span></span></label></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="n">5</span>Simmer 15 minutes</h2>
+    <p>Bring it to a low boil over medium heat. Then turn the heat to low, cover, and simmer about 15 minutes. It's ready when a fork slides easily into the squash.</p>
+    <div class="timer" data-id="simmer" data-default="15">
+      <div class="clock" aria-live="polite">15:00</div>
+      <div class="ends" hidden></div>
+      <div class="row presets">
+        <button class="chip" data-min="15" aria-pressed="true" type="button">15 min</button>
+        <button class="chip" data-min="5" aria-pressed="false" type="button">+5 min more</button>
+      </div>
+      <div class="row">
+        <button class="big go" type="button">Start timer</button>
+        <button class="big ghost stop" type="button" hidden>Cancel</button>
+      </div>
+      <p class="note" style="font-size:.95rem">This timer keeps counting if you close the page, but it can only beep while the page is open.</p>
+    </div>
+    <button class="step-btn" id="s5" aria-pressed="false" type="button"><span class="box"></span><span class="lbl">Squash is fork-tender</span></button>
+  </section>
+
+  <section>
+    <h2><span class="n">6</span>Blend until smooth</h2>
+    <p>Blend right in the pot with an immersion blender until creamy. If you use a regular blender, blend on high in batches and pour it back into the pot. Hot soup expands, so don't fill the blender more than halfway and hold the lid down with a towel.</p>
+    <button class="step-btn" id="s6" aria-pressed="false" type="button"><span class="box"></span><span class="lbl">Smooth and creamy</span></button>
+  </section>
+
+  <section>
+    <h2><span class="n">7</span>Taste and adjust</h2>
+    <p>Taste it. Add more curry powder, salt or maple syrup if it needs it. Let it cook a few more minutes over medium heat.</p>
+    <button class="step-btn" id="s7" aria-pressed="false" type="button"><span class="box"></span><span class="lbl">Tastes right</span></button>
+  </section>
+
+  <section>
+    <h2><span class="n">8</span>Serve</h2>
+    <p>Ladle into bowls. Serve it plain, or top with pumpkin seeds, a little chili garlic paste, or a swirl of full-fat coconut milk.</p>
+    <button class="step-btn" id="s8" aria-pressed="false" type="button"><span class="box"></span><span class="lbl">Served</span></button>
+    <div class="milestone" id="ms-done" hidden>Soup's on. 🎉</div>
+  </section>
+
+  <footer>
+    <p class="note">Serves 4. Best fresh. Keeps 3–4 days covered in the fridge, or up to 1 month in the freezer.</p>
+    <p class="note">About 287 calories a serving, with 5 g protein and 12 g fiber.</p>
+    <p class="note">Recipe from Minimalist Baker.</p>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var KEY = "curried-butternut-squash-soup-v1";
+  var state = {};
+  try { state = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { state = {}; }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  var boxes = [].slice.call(document.querySelectorAll("ul.checks input"));
+  var steps = [].slice.call(document.querySelectorAll(".step-btn"));
+  var prepIds = ["p1","p2","p3","p4","p5","p6","p7","p8","p9","p10","t1","t2"];
+
+  boxes.forEach(function (b) {
+    b.checked = !!state[b.id];
+    b.addEventListener("change", function () { state[b.id] = b.checked; save(); update(); });
+  });
+  steps.forEach(function (s) {
+    s.setAttribute("aria-pressed", state[s.id] ? "true" : "false");
+    s.addEventListener("click", function () {
+      state[s.id] = !state[s.id];
+      s.setAttribute("aria-pressed", state[s.id] ? "true" : "false");
+      save(); update();
+    });
+  });
+
+  function update() {
+    var counted = boxes.filter(function (b) { return !b.hasAttribute("data-optional"); });
+    var total = counted.length + steps.length, done = 0;
+    counted.forEach(function (b) { if (b.checked) done++; });
+    steps.forEach(function (s) { if (state[s.id]) done++; });
+    document.getElementById("bar").style.width = (done / total * 100) + "%";
+    document.getElementById("meta").textContent = done === 0 ? "30 min · serves 4" : done + " of " + total + " done";
+    document.getElementById("ms-prep").hidden = !prepIds.every(function (id) { return state[id]; });
+    document.getElementById("ms-done").hidden = !state.s8;
+  }
+  update();
+
+  // Keep screen on
+  var lock = null, wakeBtn = document.getElementById("wake");
+  function setWake(on) {
+    if (!on) { if (lock) { lock.release().catch(function(){}); lock = null; } wakeBtn.setAttribute("aria-pressed", "false"); wakeBtn.textContent = "Keep screen on"; return; }
+    if (!("wakeLock" in navigator)) { wakeBtn.textContent = "Screen lock not supported here"; return; }
+    navigator.wakeLock.request("screen").then(function (l) {
+      lock = l; wakeBtn.setAttribute("aria-pressed", "true"); wakeBtn.textContent = "Screen stays on ✓";
+      l.addEventListener("release", function () { if (lock === l) { lock = null; wakeBtn.setAttribute("aria-pressed", "false"); wakeBtn.textContent = "Keep screen on"; } });
+    }).catch(function () { wakeBtn.textContent = "Couldn't keep screen on"; });
+  }
+  wakeBtn.addEventListener("click", function () { setWake(!lock); });
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible" && wakeBtn.getAttribute("aria-pressed") === "true" && !lock) setWake(true);
+  });
+
+  // Timers (end time is saved, so a long timer survives closing the page)
+  var ctx = null;
+  function audio() { try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); ctx.resume(); } catch (e) {} }
+  function beep() {
+    if (ctx) {
+      try {
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.frequency.value = 880; o.connect(g); g.connect(ctx.destination);
+        g.gain.setValueAtTime(0.25, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+        o.start(); o.stop(ctx.currentTime + 0.5);
+      } catch (e) {}
+    }
+    try { navigator.vibrate && navigator.vibrate(300); } catch (e) {}
+  }
+  function fmt(s) {
+    var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), r = s % 60;
+    var mm = (m < 10 ? "0" : "") + m, rr = (r < 10 ? "0" : "") + r;
+    return h ? h + ":" + mm + ":" + rr : mm + ":" + rr;
+  }
+  function clockTime(t) { return new Date(t).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); }
+
+  var timers = [];
+  document.querySelectorAll(".timer").forEach(function (el) {
+    var id = el.dataset.id, skey = "timer-" + id;
+    var mins = +el.dataset.default, tick = null, ringTick = null;
+    var clock = el.querySelector(".clock"), ends = el.querySelector(".ends");
+    var go = el.querySelector(".go"), stop = el.querySelector(".stop");
+    var presets = [].slice.call(el.querySelectorAll(".presets .chip"));
+    var goLabel = go.textContent;
+
+    presets.forEach(function (c) {
+      c.addEventListener("click", function () {
+        if (state[skey]) return;
+        mins = +c.dataset.min;
+        presets.forEach(function (o) { o.setAttribute("aria-pressed", o === c ? "true" : "false"); });
+        clock.textContent = fmt(mins * 60);
+      });
+    });
+
+    function reset() {
+      clearInterval(tick); clearInterval(ringTick); tick = ringTick = null;
+      delete state[skey]; save();
+      clock.classList.remove("ring"); clock.textContent = fmt(mins * 60);
+      ends.hidden = true; go.hidden = false; go.textContent = goLabel;
+      stop.hidden = true; stop.textContent = "Cancel";
+      presets.forEach(function (c) { c.disabled = false; });
+    }
+    function run(endAt) {
+      go.hidden = true; stop.hidden = false;
+      presets.forEach(function (c) { c.disabled = true; });
+      ends.textContent = "Done at " + clockTime(endAt); ends.hidden = false;
+      function step() {
+        var left = Math.max(0, Math.round((endAt - Date.now()) / 1000));
+        clock.textContent = fmt(left);
+        if (left === 0) {
+          clearInterval(tick); tick = null;
+          clock.textContent = "Time's up!"; clock.classList.add("ring");
+          stop.textContent = "Done"; beep(); ringTick = setInterval(beep, 1500);
+        }
+      }
+      step(); tick = setInterval(step, 250);
+    }
+    go.addEventListener("click", function () {
+      audio();
+      state[skey] = Date.now() + mins * 60000; save();
+      run(state[skey]);
+    });
+    stop.addEventListener("click", reset);
+
+    clock.textContent = fmt(mins * 60);
+    if (state[skey]) run(state[skey]);
+    timers.push(reset);
+  });
+
+  document.getElementById("reset").addEventListener("click", function () {
+    timers.forEach(function (r) { r(); });
+    state = {}; save();
+    boxes.forEach(function (b) { b.checked = false; });
+    steps.forEach(function (s) { s.setAttribute("aria-pressed", "false"); });
+    update(); window.scrollTo({ top: 0 });
+  });
+})();
+</script>
+</body>
+</html>
