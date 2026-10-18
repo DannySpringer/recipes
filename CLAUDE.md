@@ -46,6 +46,7 @@ Writing style: short, friendly, second person, one action per step. Say what "do
 
 The index groups recipes into categories, each a `<section class="group" id="...">` with an `<h2>` and a `ul.list`, plus a matching link in the `nav.jump` row at the top:
 
+- `#breakfast` **Breakfast**: breakfast dishes. First on the page.
 - `#dinners` **Dinners**: main dishes.
 - `#sides` **Sides & breads**: breads, dips, sauces, side dishes.
 - `#sweets` **Sweets**: cakes, quick breads, desserts.
