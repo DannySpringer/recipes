@@ -90,6 +90,8 @@ ul.checks input:checked + span { color: var(--done); text-decoration: line-throu
 
 
 
+.hero { display: block; width: 100%; height: auto; aspect-ratio: 758 / 421; object-fit: cover; border-radius: 14px; margin-top: 1rem; background: var(--line); }
+
 .milestone { background: var(--accent-soft); border-radius: 14px; padding: 12px 16px; font-weight: 700; }
 
 .timer { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
@@ -118,6 +120,7 @@ footer { border-top: 1px solid var(--line); padding-top: 1rem; }
 </header>
 
 <main class="wrap">
+  <img class="hero" src="img/ground-beef-bulgogi.webp" width="758" height="421" alt="Speckled ceramic bowl of white rice topped with glossy soy-glazed ground beef and soft onions, sprinkled with sesame seeds and sliced scallions, with sliced cucumber on the side">
   <div class="tools">
     <button class="chip" id="wake" aria-pressed="false" type="button">Keep screen on</button>
     <button class="chip" id="reset" type="button">Start over</button>
